@@ -138,14 +138,14 @@ namespace RemoteControl.Server
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            //if (_isCaptureMouse)
-            //{
-            //    RequestMouseEvent req = new RequestMouseEvent();
-            //    req.MouseButton = (eMouseButtons)e.Button;
-            //    req.MouseOperation = eMouseOperations.MouseMove;
-            //    req.MouseLocation = e.Location;
-            //    this.oSession.Send(ePacketType.PACKET_MOUSE_EVENT_REQUEST, req);
-            //}
+            if (_isCaptureMouse)
+            {
+                RequestMouseEvent req = new RequestMouseEvent();
+                req.MouseButton = (eMouseButtons)e.Button;
+                req.MouseOperation = eMouseOperations.MouseMove;
+                req.MouseLocation = e.Location;
+                this.oSession.Send(ePacketType.PACKET_MOUSE_EVENT_REQUEST, req);
+            }
         }
 
         private void pictureBox1_MouseDoubleClick(object sender, MouseEventArgs e)

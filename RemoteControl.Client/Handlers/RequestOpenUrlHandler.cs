@@ -20,7 +20,7 @@ namespace RemoteControl.Client.Handlers
             {
                 ProcessUtil.Run(req.Url, "", false, true);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         }

@@ -124,6 +124,12 @@
     <Compile Include="FrmCaptureScreen.Designer.cs">
       <DependentUpon>FrmCaptureScreen.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmHVNC.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHVNC.Designer.cs">
+      <DependentUpon>FrmHVNC.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmDownload.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -206,6 +212,9 @@
     </Compile>
     <Compile Include="FrmCaptureVideo.Designer.cs">
       <DependentUpon>FrmCaptureVideo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmChangeConfig.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Utils\IconChanger.cs" />
     <Compile Include="Utils\IconChangerExtensions.cs" />

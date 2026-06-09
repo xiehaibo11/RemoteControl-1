@@ -131,7 +131,7 @@ namespace RemoteControl.Client.Excutor
                     MessageBox.Show(text, title, (MessageBoxButtons)buttonType, (MessageBoxIcon)iconType);
 
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
             }

@@ -73,7 +73,7 @@ namespace RemoteControl.Client.Handlers
 
                     p.Kill();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
             }

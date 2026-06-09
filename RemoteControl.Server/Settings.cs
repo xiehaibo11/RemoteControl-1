@@ -13,6 +13,8 @@ namespace RemoteControl.Server
         public ClientParas ClientPara = new ClientParas();
         public int ServerPort;
         public string SkinPath;
+        public string RelayServerIP = "";
+        public int RelayServerPort = 10010;
 
         static Settings()
         {
@@ -21,7 +23,7 @@ namespace RemoteControl.Server
                 string json = System.IO.File.ReadAllText(SettingFileName);
                 Settings.CurrentSettings = JsonConvert.DeserializeObject<Settings>(json);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         }

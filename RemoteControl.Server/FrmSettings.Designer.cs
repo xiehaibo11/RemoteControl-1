@@ -48,6 +48,10 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.textBoxLocalServerPort = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.labelRelayIP = new System.Windows.Forms.Label();
+            this.textBoxRelayIP = new System.Windows.Forms.TextBox();
+            this.labelRelayPort = new System.Windows.Forms.Label();
+            this.textBoxRelayPort = new System.Windows.Forms.TextBox();
             this.checkBoxShowOriginalFileName = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -245,6 +249,10 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.textBoxRelayPort);
+            this.tabPage2.Controls.Add(this.labelRelayPort);
+            this.tabPage2.Controls.Add(this.textBoxRelayIP);
+            this.tabPage2.Controls.Add(this.labelRelayIP);
             this.tabPage2.Controls.Add(this.textBoxLocalServerPort);
             this.tabPage2.Controls.Add(this.label3);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -270,6 +278,40 @@
             this.label3.Size = new System.Drawing.Size(77, 12);
             this.label3.TabIndex = 2;
             this.label3.Text = "服务器端口：";
+            // 
+            // labelRelayIP
+            // 
+            this.labelRelayIP.AutoSize = true;
+            this.labelRelayIP.Location = new System.Drawing.Point(108, 72);
+            this.labelRelayIP.Name = "labelRelayIP";
+            this.labelRelayIP.Size = new System.Drawing.Size(77, 12);
+            this.labelRelayIP.TabIndex = 4;
+            this.labelRelayIP.Text = "Relay服务IP：";
+            // 
+            // textBoxRelayIP
+            // 
+            this.textBoxRelayIP.Location = new System.Drawing.Point(191, 69);
+            this.textBoxRelayIP.Name = "textBoxRelayIP";
+            this.textBoxRelayIP.Size = new System.Drawing.Size(201, 21);
+            this.textBoxRelayIP.TabIndex = 5;
+            this.textBoxRelayIP.UseSystemPasswordChar = true;
+            // 
+            // labelRelayPort
+            // 
+            this.labelRelayPort.AutoSize = true;
+            this.labelRelayPort.Location = new System.Drawing.Point(108, 108);
+            this.labelRelayPort.Name = "labelRelayPort";
+            this.labelRelayPort.Size = new System.Drawing.Size(77, 12);
+            this.labelRelayPort.TabIndex = 6;
+            this.labelRelayPort.Text = "Relay端口：";
+            // 
+            // textBoxRelayPort
+            // 
+            this.textBoxRelayPort.Location = new System.Drawing.Point(191, 105);
+            this.textBoxRelayPort.Name = "textBoxRelayPort";
+            this.textBoxRelayPort.Size = new System.Drawing.Size(201, 21);
+            this.textBoxRelayPort.TabIndex = 7;
+            this.textBoxRelayPort.UseSystemPasswordChar = true;
             // 
             // checkBoxShowOriginalFileName
             // 
@@ -329,6 +371,10 @@
         private System.Windows.Forms.PictureBox pictureBoxAppIcon;
         private System.Windows.Forms.CheckBox checkBoxAppIcon;
         private System.Windows.Forms.CheckBox checkBoxShowOriginalFileName;
+        private System.Windows.Forms.Label labelRelayIP;
+        private System.Windows.Forms.TextBox textBoxRelayIP;
+        private System.Windows.Forms.Label labelRelayPort;
+        private System.Windows.Forms.TextBox textBoxRelayPort;
 
     }
 }

@@ -63,7 +63,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(59, 12);
             this.label1.TabIndex = 4;
-            this.label1.Text = "web地址：";
+            this.label1.Text = "网络地址：";
             // 
             // textBox2
             // 

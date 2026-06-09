@@ -21,17 +21,22 @@ namespace RemoteControl.Protocals
 
         public void SetServerIP(string ip)
         {
-            this.ServerIP = IPAddress.Parse(ip).Address;
+            byte[] addressBytes = IPAddress.Parse(ip).GetAddressBytes();
+            if (addressBytes.Length != 4)
+            {
+                throw new NotSupportedException("Only IPv4 server addresses are supported.");
+            }
+            this.ServerIP = BitConverter.ToInt32(addressBytes, 0);
         }
 
         public string GetServerIP()
         {
-            return new IPAddress(this.ServerIP).ToString();
+            return new IPAddress(BitConverter.GetBytes((int)this.ServerIP)).ToString();
         }
 
         public IPEndPoint GetIPEndPoint()
         {
-            return new IPEndPoint(new IPAddress(this.ServerIP), this.ServerPort);
+            return new IPEndPoint(IPAddress.Parse(GetServerIP()), this.ServerPort);
         }
 
         public void InitHeader()

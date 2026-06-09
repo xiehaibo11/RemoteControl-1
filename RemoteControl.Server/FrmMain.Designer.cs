@@ -268,6 +268,7 @@
             // treeView1
             // 
             this.treeView1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.treeView1.CheckBoxes = true;
             this.treeView1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeView1.ImageIndex = 0;
             this.treeView1.ImageList = this.imageList2;
@@ -449,7 +450,7 @@
             this.toolStripButton12.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton12.Name = "toolStripButton12";
             this.toolStripButton12.Size = new System.Drawing.Size(28, 28);
-            this.toolStripButton12.Text = "toolStripButton12";
+            this.toolStripButton12.Text = "剪切";
             this.toolStripButton12.Click += new System.EventHandler(this.toolStripButton12_Click);
             // 
             // toolStripButton8

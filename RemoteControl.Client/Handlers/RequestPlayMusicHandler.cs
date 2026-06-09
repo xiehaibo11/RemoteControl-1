@@ -19,6 +19,9 @@ namespace RemoteControl.Client.Handlers
             if (reqType == ePacketType.PACKET_PLAY_MUSIC_REQUEST)
             {
                 var req = reqObj as RequestPlayMusic;
+                if (req == null || string.IsNullOrEmpty(req.MusicFilePath) || req.MusicFilePath.IndexOf('"') >= 0)
+                    return;
+
                 StopMusic();
                 StartPlayMusic(session, req.MusicFilePath);
             }
@@ -37,7 +40,7 @@ namespace RemoteControl.Client.Handlers
                 string musicPlayerFileName = ResUtil.WriteToRandomFile(data,"mscp.exe");
                 lastPlayMusicExeFile = System.IO.Path.GetFileNameWithoutExtension(musicPlayerFileName);
                 // 启动音乐播放程序
-                ProcessUtil.RunByCmdStart(musicPlayerFileName + " player " + musicFilePath, true);
+                ProcessUtil.Run(musicPlayerFileName, "player \"" + musicFilePath + "\"", true);
             }
             catch (Exception ex)
             {

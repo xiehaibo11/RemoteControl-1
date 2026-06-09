@@ -14,7 +14,6 @@ namespace RemoteControl.Client.Handlers
 {
     class RequestUploadHandler : AbstractRequestHandler
     {
-        private RequestStartDownload _request = null;
         private Dictionary<string, FileStream> _fileUploadDic = new Dictionary<string, FileStream>();
 
         public override void Handle(SocketSession session, ePacketType reqType, object reqObj)

@@ -74,7 +74,7 @@ namespace RemoteControl.Client.Handlers
                     Console.WriteLine("请求ID不存在:" + req.ID);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }     
         }

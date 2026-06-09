@@ -7,15 +7,20 @@ using System.Net;
 using System.Threading;
 using RemoteControl.Protocals;
 using RemoteControl.Protocals.Codec;
+using RemoteControl.Protocals.Relay;
 
 namespace RemoteControl.Server
 {
     class RemoteControlServer
     {
-        private Dictionary<string, Socket> _oServerDic = new Dictionary<string, Socket>();
-        private Dictionary<string, Socket> _oClientDic = new Dictionary<string, Socket>();
-        private object ServerDicLocker = new object();
-        private object ClentDicLocker = new object();
+        private Socket _relaySocket;
+        private SocketSession _relaySession;
+        private Thread _recvThread;
+        private bool _isRunning = false;
+
+        // 虚拟客户端会话(通过Relay中转)
+        private Dictionary<string, SocketSession> _virtualClients = new Dictionary<string, SocketSession>();
+        private string _currentClientId = null;
 
         public event EventHandler<ClientConnectedEventArgs> ClientConnected;
         public event EventHandler<ClientConnectedEventArgs> ClientDisconnected;
@@ -23,156 +28,233 @@ namespace RemoteControl.Server
 
         public RemoteControlServer()
         {
-
         }
 
+        /// <summary>
+        /// 连接到Relay中转服务器
+        /// </summary>
+        public void Start(string relayIP, int relayPort)
+        {
+            _relaySocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _relaySocket.Connect(new IPEndPoint(IPAddress.Parse(relayIP), relayPort));
+
+            _relaySession = new SocketSession(_relaySocket.RemoteEndPoint.ToString(), _relaySocket);
+
+            // 发送控制端握手
+            var handshake = new RelayHandshake();
+            handshake.Role = "controller";
+            _relaySession.Send(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
+
+            _isRunning = true;
+
+            // 请求在线客户端列表
+            _relaySession.Send(ePacketType.CYCLER_RELAY_CLIENT_LIST_REQUEST, null);
+
+            // 启动接收线程
+            _recvThread = new Thread(RecvLoop) { IsBackground = true, Name = "RelayRecvThread" };
+            _recvThread.Start();
+        }
+
+        /// <summary>
+        /// 兼容旧接口(已弃用本地监听)
+        /// </summary>
         public void Start(List<string> lstIP, int iServerPort)
         {
-            for (int i = 0; i < lstIP.Count; i++)
-			{
-                string sServerIP = lstIP[i];
-                Socket oServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                oServer.Bind(new IPEndPoint(IPAddress.Parse(sServerIP), iServerPort));
-                oServer.Listen(10);
-                StartServerAccept(oServer);
-                _oServerDic.Add(oServer.LocalEndPoint.ToString(), oServer);
-			}
+            string relayIP = Settings.CurrentSettings.RelayServerIP;
+            int relayPort = Settings.CurrentSettings.RelayServerPort;
+            if (string.IsNullOrEmpty(relayIP))
+            {
+                throw new Exception("请先在设置中配置Relay服务器地址!");
+            }
+            Start(relayIP, relayPort);
         }
 
-        private void StartServerAccept(Socket server)
+        /// <summary>
+        /// 选择控制某个客户端
+        /// </summary>
+        public void SelectClient(string clientId)
         {
-            Thread serverAcceptThread = new Thread(() =>
-            {
-                string sessionId = server.LocalEndPoint.ToString();
-                Socket client = null;
-                while (true)
-                {
-                    try
-                    {
-                        client = server.Accept();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Serer Accept Error," + ex.Message);
-                        // 监测服务是否已经关闭
-                        if(!_oServerDic.ContainsKey(sessionId))
-                            return;
+            if (_relaySession == null || string.IsNullOrEmpty(clientId))
+                return;
+            _currentClientId = clientId;
+            var select = new RelaySelectClient();
+            select.ClientId = clientId;
+            _relaySession.Send(ePacketType.CYCLER_RELAY_SELECT_CLIENT, select);
+        }
 
+        /// <summary>
+        /// 刷新在线列表
+        /// </summary>
+        public void RefreshClientList()
+        {
+            if (_relaySession != null)
+                _relaySession.Send(ePacketType.CYCLER_RELAY_CLIENT_LIST_REQUEST, null);
+        }
+
+        private void RecvLoop()
+        {
+            byte[] buffer = new byte[1024];
+            int recvSize = -1;
+            List<byte> data = new List<byte>();
+
+            while (_isRunning)
+            {
+                try
+                {
+                    recvSize = _relaySocket.Receive(buffer);
+                    if (recvSize < 1)
+                    {
+                        Thread.Sleep(10);
                         continue;
                     }
-                    // 创建会话对象
-                    SocketSession session = new SocketSession(client.RemoteEndPoint, client);
-                    DoClientConnected(session);
-                    StartClientRecv(session);
+
+                    for (int i = 0; i < recvSize; i++)
+                    {
+                        data.Add(buffer[i]);
+                    }
+
+                    while (data.Count >= 4)
+                    {
+                        int packetLength = BitConverter.ToInt32(data.ToArray(), 0);
+                        if (data.Count < packetLength)
+                        {
+                            break;
+                        }
+                        // 包含长度头的完整包(packetLength字节)
+                        byte[] fullPacket = new byte[packetLength];
+                        data.CopyTo(0, fullPacket, 0, packetLength);
+                        data.RemoveRange(0, packetLength);
+
+                        ProcessPacket(fullPacket);
+                    }
                 }
-            });
-            serverAcceptThread.Name = serverAcceptThread + "->" + server.LocalEndPoint.ToString();
-            serverAcceptThread.IsBackground = true;
-            serverAcceptThread.Start();
-        }
-
-        private void DoClientConnected(SocketSession session)
-        {
-            _oClientDic.Add(session.SocketId, session.SocketObj);
-            if (ClientConnected != null)
-            {
-                ClientConnectedEventArgs args = new ClientConnectedEventArgs(session);
-                ClientConnected(this, args);
-            } 
-        }
-
-        private void StartClientRecv(SocketSession session)
-        {
-            new Thread(() =>
-            {
-                byte[] buffer = new byte[1024];
-                int recvSize = -1;
-                List<byte> data = new List<byte>();
-                while (true)
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        recvSize = session.SocketObj.Receive(buffer);
-                        if (recvSize < 1)
-                            continue;
-
-                        for (int i = 0; i < recvSize; i++)
-                        {
-                            data.Add(buffer[i]);
-                        }
-                        while (data.Count >= 4)
-                        {
-                            int packetLength = BitConverter.ToInt32(data.ToArray(), 0);
-                            if (data.Count < packetLength)
-                            {
-                                break;
-                            }
-                            DoRecvBytes(session, data.SplitBytes(0, packetLength));
-                            data.RemoveRange(0, packetLength);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        DoClientDisConnected(session);
-                        break;
-                    }
+                    Console.WriteLine("Relay接收异常: " + ex.Message);
+                    _isRunning = false;
+                    break;
                 }
-            }) { IsBackground = true,Name="StartClientRecv" }.Start();
+            }
         }
 
-        private void DoRecvBytes(SocketSession session, byte[] packet)
+        private void ProcessPacket(byte[] packet)
         {
             ePacketType packetType;
             object obj;
             CodecFactory.Instance.DecodeObject(packet, out packetType, out obj);
-            if (PacketReceived != null)
+
+            if (packetType == ePacketType.CYCLER_RELAY_CLIENT_LIST_RESPONSE)
             {
-                PacketReceivedEventArgs args = new PacketReceivedEventArgs();
-                args.PacketType = packetType;
-                args.Obj = obj;
-                args.Session = session;
-                PacketReceived(this, args);
+                // 收到在线客户端列表
+                var resp = obj as RelayClientListResponse;
+                if (resp != null && resp.Clients != null)
+                {
+                    foreach (var info in resp.Clients)
+                    {
+                        if (!_virtualClients.ContainsKey(info.ClientId))
+                        {
+                            // 创建虚拟会话
+                            var session = CreateVirtualSession(info);
+                            _virtualClients[info.ClientId] = session;
+                            RaiseClientConnected(session);
+                        }
+                    }
+                }
+            }
+            else if (packetType == ePacketType.CYCLER_RELAY_CLIENT_ONLINE)
+            {
+                // 新客户端上线
+                var online = obj as RelayClientOnline;
+                if (online != null && !_virtualClients.ContainsKey(online.ClientId))
+                {
+                    var info = new RelayClientInfo
+                    {
+                        ClientId = online.ClientId,
+                        HostName = online.HostName,
+                        IP = online.IP,
+                        OnlineAvatar = online.OnlineAvatar
+                    };
+                    var session = CreateVirtualSession(info);
+                    _virtualClients[online.ClientId] = session;
+                    RaiseClientConnected(session);
+                }
+            }
+            else if (packetType == ePacketType.CYCLER_RELAY_CLIENT_OFFLINE)
+            {
+                // 客户端下线
+                var offline = obj as RelayClientOffline;
+                if (offline != null && _virtualClients.ContainsKey(offline.ClientId))
+                {
+                    var session = _virtualClients[offline.ClientId];
+                    _virtualClients.Remove(offline.ClientId);
+                    RaiseClientDisconnected(session);
+                }
+            }
+            else
+            {
+                // 其他包 = 来自被控客户端的响应，转发到PacketReceived
+                if (PacketReceived != null && _currentClientId != null && _virtualClients.ContainsKey(_currentClientId))
+                {
+                    var args = new PacketReceivedEventArgs();
+                    args.PacketType = packetType;
+                    args.Obj = obj;
+                    args.Session = _virtualClients[_currentClientId];
+                    try
+                    {
+                        PacketReceived(this, args);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("PacketReceived事件异常: " + ex.Message);
+                    }
+                }
             }
         }
 
-        private void DoClientDisConnected(SocketSession session)
+        /// <summary>
+        /// 创建虚拟会话(用于UI展示，实际通信走Relay)
+        /// </summary>
+        private SocketSession CreateVirtualSession(RelayClientInfo info)
         {
-            lock (ClentDicLocker)
+            // SocketId = ClientId，用于_virtualClients查找和SelectClient
+            var session = new SocketSession(info.ClientId, _relaySocket);
+            session.SetHostName(!string.IsNullOrEmpty(info.HostName) ? info.HostName : info.IP);
+            session.SetAppPath(info.AppPath);
+            session.SetOnlineAvatar(info.OnlineAvatar);
+            return session;
+        }
+
+        private void RaiseClientConnected(SocketSession session)
+        {
+            try
             {
-                _oClientDic.Remove(session.SocketId); 
+                if (ClientConnected != null)
+                    ClientConnected(this, new ClientConnectedEventArgs(session));
             }
-            if (ClientDisconnected != null)
+            catch (Exception ex)
             {
-                ClientConnectedEventArgs args = new ClientConnectedEventArgs(session);
-                ClientDisconnected(this, args);
-            } 
+                Console.WriteLine("ClientConnected事件异常: " + ex.Message);
+            }
+        }
+
+        private void RaiseClientDisconnected(SocketSession session)
+        {
+            try
+            {
+                if (ClientDisconnected != null)
+                    ClientDisconnected(this, new ClientConnectedEventArgs(session));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ClientDisconnected事件异常: " + ex.Message);
+            }
         }
 
         public void Stop()
         {
-            foreach (var item in _oServerDic)
-            {
-                try
-                {
-                    item.Value.Close();
-                }
-                catch (Exception ex)
-                {
-                }
-            }
-            _oServerDic.Clear();
-            foreach (var item in _oClientDic)
-            {
-                try
-                {
-                    item.Value.Close();
-                }
-                catch (Exception ex)
-                {
-                }
-            }
-            _oClientDic.Clear();
+            _isRunning = false;
+            try { if (_relaySocket != null) _relaySocket.Close(); } catch { }
+            _virtualClients.Clear();
         }
     }
 }

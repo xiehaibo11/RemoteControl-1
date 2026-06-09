@@ -66,7 +66,7 @@ namespace RemoteControl.Client
                 {
                     socket.Close();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
             }

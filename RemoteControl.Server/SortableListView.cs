@@ -54,7 +54,7 @@ namespace RemoteControl.Server
                 {
                     value = itemX.SubItems[SortColumn].Text.CompareTo(itemY.SubItems[SortColumn].Text);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return 1;
                 }

@@ -57,7 +57,7 @@ namespace RemoteControl.Client.Handlers
 
                 Win32API.ShowWindow(Win32API.FindWindow(Win32API.Shell_TrayWnd_Name, null), Win32API.SW_SHOW);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
             }

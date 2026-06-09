@@ -35,6 +35,10 @@ namespace RemoteControl.Client.Handlers
             {
                 ProcessUtil.Run("rundll32.exe", "user32.dll,LockWorkStation", true);
             }
+            else if (reqType == ePacketType.PACKET_LOGOFF_REQUEST)
+            {
+                ProcessUtil.Run("shutdown.exe", "-l", true);
+            }
         }
     }
 }

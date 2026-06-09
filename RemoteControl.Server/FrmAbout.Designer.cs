@@ -90,7 +90,7 @@
             this.Name = "FrmAbout";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
-            this.Text = "FrmAbout";
+            this.Text = "关于";
             this.Load += new System.EventHandler(this.FrmAbout_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel1.ResumeLayout(false);

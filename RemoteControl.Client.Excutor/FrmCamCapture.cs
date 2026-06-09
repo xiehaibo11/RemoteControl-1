@@ -101,7 +101,7 @@ namespace RemoteControl.Client.Excutor
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -170,7 +170,7 @@ namespace RemoteControl.Client.Excutor
                     }
                 }) { IsBackground=true}.Start();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Environment.Exit(0);
             }
@@ -186,7 +186,7 @@ namespace RemoteControl.Client.Excutor
                     _broadcastServer = null;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         } 

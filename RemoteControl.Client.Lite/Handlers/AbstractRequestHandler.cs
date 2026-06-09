@@ -10,7 +10,7 @@ namespace RemoteControl.Client.Handlers
 {
     abstract class AbstractRequestHandler:IRequestHandler
     {
-        public Action<object,EventArgs> OnFireQuit;
+        public Action<object,EventArgs> OnFireQuit { get; set; }
         public abstract void Handle(Protocals.SocketSession session, Protocals.ePacketType reqType, object reqObj);
 
         protected Thread RunTaskThread(Action action)

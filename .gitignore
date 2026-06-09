@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+
+# Visual Studio user state
+*.user
+*.csproj.user
+*.suo
+*.userprefs
+.vs/
+
+# Debug symbols and logs
+*.pdb
+*.log
+Log/
+*.tmp
+*.temp
+
+# Local generated review artifacts
+review_*.diff
+review_diff.txt
+
+# Local generated executables/templates
+RemoteControl.Client.Generated.exe
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+

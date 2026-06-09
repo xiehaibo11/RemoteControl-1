@@ -68,7 +68,7 @@ namespace RemoteControl.Server
                     string filename = dir + resp.CollectTime.ToString("yyyyMMddHHmmssfff") + ".jpg";
                     System.IO.File.WriteAllBytes(filename, resp.ImageData);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     
                 }

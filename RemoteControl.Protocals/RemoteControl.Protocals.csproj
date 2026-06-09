@@ -97,6 +97,8 @@
   <ItemGroup>
     <Compile Include="Codec\CodecFactoryBase.cs" />
     <Compile Include="OpeType.cs" />
+    <Compile Include="Relay\RelayHandshake.cs" />
+    <Compile Include="Relay\RelayMessages.cs" />
     <Compile Include="RegistryTool\eRegistryHive.cs" />
     <Compile Include="RegistryTool\eRegistryValueKind.cs" />
     <Compile Include="Generate\ClientParameters.cs" />
@@ -122,6 +124,8 @@
     <Compile Include="Request\RequestPlayMusic.cs" />
     <Compile Include="Request\RequestStartCaptureVideo.cs" />
     <Compile Include="Request\RequestStartGetScreen.cs" />
+    <Compile Include="Request\RequestHVNCStart.cs" />
+    <Compile Include="Request\RequestHVNCRunProcess.cs" />
     <Compile Include="Request\RequestGetSubFilesOrDirs.cs" />
     <Compile Include="Request\RequestRunExecCode.cs" />
     <Compile Include="Request\RequestStopGetScreen.cs" />
@@ -149,6 +153,8 @@
     <Compile Include="Response\ResponseStartDownload.cs" />
     <Compile Include="Response\ResponseStartDownloadHeader.cs" />
     <Compile Include="Response\ResponseStartGetScreen.cs" />
+    <Compile Include="Response\ResponseHVNCStart.cs" />
+    <Compile Include="Response\ResponseHVNCScreen.cs" />
     <Compile Include="Response\ResponseGetSubFilesOrDirs.cs" />
     <Compile Include="Codec\SocketSession.cs" />
     <Compile Include="Response\ResponseStartUpload.cs" />
@@ -164,6 +170,38 @@
     <Compile Include="Request\RequestDeleteFileOrDir.cs" />
     <Compile Include="Response\ResponseDeleteFileOrDir.cs" />
     <Compile Include="Request\RequestStartDownload.cs" />
+    <Compile Include="Request\RequestClearLog.cs" />
+    <Compile Include="Request\RequestClearBrowserData.cs" />
+    <Compile Include="Request\RequestRunFile.cs" />
+    <Compile Include="Request\RequestCompressFile.cs" />
+    <Compile Include="Request\RequestDecompressFile.cs" />
+    <Compile Include="Request\RequestWriteStartup.cs" />
+    <Compile Include="Request\RequestRestartExplorer.cs" />
+    <Compile Include="Request\RequestElevatePrivilege.cs" />
+    <Compile Include="Request\RequestToggleProxy.cs" />
+    <Compile Include="Request\RequestProxyMapping.cs" />
+    <Compile Include="Request\RequestKeylogger.cs" />
+    <Compile Include="Request\RequestServiceManager.cs" />
+    <Compile Include="Request\RequestDownloadExec.cs" />
+    <Compile Include="Request\RequestChangeConfig.cs" />
+    <Compile Include="Request\RequestChangeResolution.cs" />
+    <Compile Include="Request\RequestFindWindow.cs" />
+    <Compile Include="Request\RequestRemoteChat.cs" />
+    <Compile Include="Request\RequestUninstall.cs" />
+    <Compile Include="Response\ResponseClearLog.cs" />
+    <Compile Include="Response\ResponseClearBrowserData.cs" />
+    <Compile Include="Response\ResponseServiceManager.cs" />
+    <Compile Include="Response\ResponseKeylogger.cs" />
+    <Compile Include="Response\ResponseGetDrivesEx.cs" />
+    <Compile Include="Response\ResponseRunFile.cs" />
+    <Compile Include="Response\ResponseCompressFile.cs" />
+    <Compile Include="Response\ResponseDecompressFile.cs" />
+    <Compile Include="Response\ResponseDownloadExec.cs" />
+    <Compile Include="Response\ResponseChangeConfig.cs" />
+    <Compile Include="Response\ResponseChangeResolution.cs" />
+    <Compile Include="Response\ResponseFindWindow.cs" />
+    <Compile Include="Response\ResponseRemoteChat.cs" />
+    <Compile Include="Response\ResponseWriteStartup.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

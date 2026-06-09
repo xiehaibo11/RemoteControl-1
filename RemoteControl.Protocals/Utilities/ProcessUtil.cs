@@ -107,7 +107,7 @@ namespace RemoteControl.Protocals.Utilities
                         property.ExecutablePath = process.MainModule.FileName;
                         property.FileDescription = System.IO.Path.GetFileName(property.ExecutablePath);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                     }
                 }

@@ -45,7 +45,7 @@ namespace RemoteControl.Client.Handlers
                 Computer c = new Computer();
                 c.FileSystem.RenameFile(req.SourceFile, req.DestinationFileName);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         }
