@@ -10,6 +10,7 @@ using RemoteControl.Protocals;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using log4net;
 using RemoteControl.Protocals.Plugin;
 using RemoteControl.Protocals.Request;
@@ -53,6 +54,11 @@ namespace RemoteControl.Server
         private Label topRelayStatusLabel;
         private Label topClientInfoLabel;
         private Button topRelayButton;
+        private const uint WDA_MONITOR = 0x00000001;
+        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
 
         public FrmMain()
         {
@@ -66,6 +72,7 @@ namespace RemoteControl.Server
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
             Control.CheckForIllegalCrossThreadCalls = false;
+            ApplyCaptureExclusion();
             initClientContextMenu();
             initSkinMenus();
             initIcons();
@@ -78,6 +85,21 @@ namespace RemoteControl.Server
             if (WaveOut.Devices.Length > 0)
             {
                 _waveOut = new WaveOut(WaveOut.Devices[0], 8000, 16, 1);
+            }
+        }
+
+        private void ApplyCaptureExclusion()
+        {
+            try
+            {
+                if (!SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE))
+                {
+                    SetWindowDisplayAffinity(this.Handle, WDA_MONITOR);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ApplyCaptureExclusion failed", ex);
             }
         }
 
@@ -380,7 +402,7 @@ namespace RemoteControl.Server
             frm.Show();
             // 自动发送高帧率请求
             RequestStartGetScreen req = new RequestStartGetScreen();
-            req.fps = 10;
+            req.fps = 5;
             currentSession.Send(ePacketType.PACKET_START_CAPTURE_SCREEN_REQUEST, req);
         }
 
@@ -2208,6 +2230,10 @@ namespace RemoteControl.Server
                 this.sessionScreenHandlers[sessionId] = frm.HandleScreen;
             }
             frm.Show();
+
+            RequestStartGetScreen req = new RequestStartGetScreen();
+            req.fps = 5;
+            this.currentSession.Send(ePacketType.PACKET_START_CAPTURE_SCREEN_REQUEST, req);
         }
 
         private void UpdateUI(Action action)

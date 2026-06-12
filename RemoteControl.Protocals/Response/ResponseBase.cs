@@ -16,11 +16,15 @@ namespace RemoteControl.Protocals
 
         protected Image ByteArray2Image(byte[] data)
         {
-            using (MemoryStream ms = new MemoryStream())
+            if (data == null || data.Length == 0)
             {
-                ms.Write(data, 0, data.Length);
+                return null;
+            }
 
-                return Image.FromStream(ms);
+            using (MemoryStream ms = new MemoryStream(data))
+            using (Image image = Image.FromStream(ms))
+            {
+                return new Bitmap(image);
             }
         }
 
@@ -29,7 +33,7 @@ namespace RemoteControl.Protocals
             using (var ms = new MemoryStream())
             {
                 image.Save(ms, imageFormat);
-                return ms.GetBuffer();
+                return ms.ToArray();
             }
         }
     }

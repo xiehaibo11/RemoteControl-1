@@ -9,6 +9,8 @@ using RemoteControl.Protocals;
 using log4net;
 using System.IO;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Threading;
 using RemoteControl.Server.Utils;
 
 namespace RemoteControl.Server
@@ -19,17 +21,31 @@ namespace RemoteControl.Server
         private SocketSession oSession;
         private bool _isCaptureMouse = false;
         private bool _isCaptureKeyboard = false;
+        private readonly object _screenFrameLock = new object();
+        private ResponseStartGetScreen _latestScreenResponse;
+        private int _screenUpdateScheduled = 0;
+        private int _stopCaptureSent = 0;
+        private bool _isClosing = false;
+
+        private const int DefaultCaptureFps = 5;
+        private const uint WDA_MONITOR = 0x00000001;
+        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
 
         public FrmCaptureScreen(SocketSession session)
         {
             InitializeComponent();
             this.oSession = session;
-            this.FormClosed += new FormClosedEventHandler(FrmCaptureScreen_FormClosed);
         }
 
-        void FrmCaptureScreen_FormClosed(object sender, FormClosedEventArgs e)
+        private void SendStopCaptureRequest()
         {
-            oSession.Send(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, null);
+            if (Interlocked.Exchange(ref _stopCaptureSent, 1) == 0 && oSession != null)
+            {
+                oSession.Send(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, null);
+            }
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
@@ -39,38 +55,120 @@ namespace RemoteControl.Server
             if (button.Checked)
             {
                 RequestStartGetScreen req = new RequestStartGetScreen();
-                req.fps = 5;
+                req.fps = DefaultCaptureFps;
+                Interlocked.Exchange(ref _stopCaptureSent, 0);
                 oSession.Send(ePacketType.PACKET_START_CAPTURE_SCREEN_REQUEST, req);
             }
             else
             {
-                oSession.Send(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, null);
+                SendStopCaptureRequest();
             }
         }
 
         public void HandleScreen(ResponseStartGetScreen resp)
         {
-            if (this.InvokeRequired)
+            if (resp == null || _isClosing || this.IsDisposed || !this.IsHandleCreated)
             {
-                this.Invoke(new Action<ResponseStartGetScreen>(HandleScreen), resp);
                 return;
             }
+
+            lock (_screenFrameLock)
+            {
+                _latestScreenResponse = resp;
+            }
+
+            if (Interlocked.CompareExchange(ref _screenUpdateScheduled, 1, 0) == 0)
+            {
+                try
+                {
+                    this.BeginInvoke(new Action(RenderLatestScreen));
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+        }
+
+        private void RenderLatestScreen()
+        {
+            ResponseStartGetScreen resp = null;
+            bool hasMoreFrames = false;
+
             try
             {
-                this.pictureBox1.Image = resp.GetImage();
+                lock (_screenFrameLock)
+                {
+                    resp = _latestScreenResponse;
+                    _latestScreenResponse = null;
+                }
+
+                if (resp == null || !resp.Result)
+                {
+                    return;
+                }
+
+                Image image = resp.GetImage();
+                if (image == null)
+                {
+                    return;
+                }
+
+                Image oldImage = this.pictureBox1.Image;
+                this.pictureBox1.Image = image;
+                if (oldImage != null)
+                {
+                    oldImage.Dispose();
+                }
             }
             catch (Exception ex)
             {
                 Logger.Error("HandleScreen", ex);
             }
+            finally
+            {
+                Interlocked.Exchange(ref _screenUpdateScheduled, 0);
+                lock (_screenFrameLock)
+                {
+                    hasMoreFrames = _latestScreenResponse != null;
+                }
+
+                if (hasMoreFrames && !_isClosing && Interlocked.CompareExchange(ref _screenUpdateScheduled, 1, 0) == 0)
+                {
+                    try
+                    {
+                        this.BeginInvoke(new Action(RenderLatestScreen));
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }
+            }
         }
 
         private void FrmCaptureScreen_Load(object sender, EventArgs e)
         {
+            ApplyCaptureExclusion();
+            this.toolStripMenuItemFPS15.Visible = false;
+            this.toolStripMenuItemFPS60.Visible = false;
             // Panel增加滚动条
             this.panel1.AutoScroll = true;
             // 根据图像大小，自动调节控件和Image的尺寸
             this.pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+        }
+
+        private void ApplyCaptureExclusion()
+        {
+            try
+            {
+                if (!SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE))
+                {
+                    SetWindowDisplayAffinity(this.Handle, WDA_MONITOR);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ApplyCaptureExclusion failed", ex);
+            }
         }
 
         private void toolStripButtonSave_Click(object sender, EventArgs e)
@@ -274,7 +372,15 @@ namespace RemoteControl.Server
         /// <param name="e"></param>
         private void FrmCaptureScreen_FormClosing(object sender, FormClosingEventArgs e)
         {
-            oSession.Send(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, null);
+            _isClosing = true;
+            SendStopCaptureRequest();
+
+            Image oldImage = this.pictureBox1.Image;
+            this.pictureBox1.Image = null;
+            if (oldImage != null)
+            {
+                oldImage.Dispose();
+            }
         } 
 
         #endregion

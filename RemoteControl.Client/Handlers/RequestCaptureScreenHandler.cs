@@ -15,6 +15,8 @@ namespace RemoteControl.Client.Handlers
 {
     class RequestCaptureScreenHandler : AbstractRequestHandler
     {
+        private const int MinFps = 1;
+        private const int MaxFps = 10;
         private bool _isRunning = false;
         private RequestStartGetScreen _request = null;
         public override void Handle(SocketSession session, ePacketType reqType, object reqObj)
@@ -23,17 +25,19 @@ namespace RemoteControl.Client.Handlers
             {
                 // 开始捕获
                 RequestStartGetScreen req = reqObj as RequestStartGetScreen;
-                if (_request == null)
+                if (req == null)
                 {
-                    // 第一次发送启动监控请求，则创建监控线程
-                    _request = req;
+                    return;
+                }
+
+                req.fps = NormalizeFps(req.fps);
+                _request = req;
+
+                if (!_isRunning)
+                {
+                    // 第一次或停止后重新发送启动监控请求，则创建监控线程
                     _isRunning = true;
                     RunTaskThread(StartCaptureScreen, session);
-                }
-                else
-                {
-                    // 非第一次发送启动监控请求，则修改相关参数
-                    _request.fps = req.fps;
                 }
             }
             else if (reqType == ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST)
@@ -47,31 +51,43 @@ namespace RemoteControl.Client.Handlers
         {
             int sleepValue = 1000;
             int fpsValue = 1;
-            while (true)
+            while (_isRunning)
             {
-                if (!_isRunning)
-                {
-                    return;
-                }
-                fpsValue = _request.fps;
+                fpsValue = NormalizeFps(_request == null ? MinFps : _request.fps);
                 sleepValue = 1000 / fpsValue;
-                for (int i = 0; i < fpsValue; i++)
+                ResponseStartGetScreen resp = new ResponseStartGetScreen();
+                try
                 {
-                    ResponseStartGetScreen resp = new ResponseStartGetScreen();
-                    try
+                    using (var image = ScreenUtil.CaptureScreenOptimized())
                     {
-                        resp.SetImage(ScreenUtil.CaptureScreen2(), ImageFormat.Jpeg);
+                        resp.SetImage(image, ImageFormat.Jpeg);
                     }
-                    catch (Exception ex)
-                    {
-                        resp.Result = false;
-                        resp.Message = ex.Message;
-                        resp.Detail = ex.StackTrace;
-                    }
-                    session.Send(ePacketType.PACKET_START_CAPTURE_SCREEN_RESPONSE, resp);
-                    Thread.Sleep(sleepValue);
                 }
+                catch (Exception ex)
+                {
+                    resp.Result = false;
+                    resp.Message = ex.Message;
+                    resp.Detail = ex.StackTrace;
+                }
+
+                session.Send(ePacketType.PACKET_START_CAPTURE_SCREEN_RESPONSE, resp);
+                Thread.Sleep(sleepValue);
             }
+        }
+
+        private int NormalizeFps(int fps)
+        {
+            if (fps < MinFps)
+            {
+                return MinFps;
+            }
+
+            if (fps > MaxFps)
+            {
+                return MaxFps;
+            }
+
+            return fps;
         }
     }
 }

