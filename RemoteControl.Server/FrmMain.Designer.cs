@@ -128,6 +128,9 @@
             this.刷新急速ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.刷新ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.结束进程ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.挂起进程ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.恢复进程ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.设置优先级ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
@@ -150,7 +153,7 @@
             this.ToolStripMenuItemSkins = new System.Windows.Forms.ToolStripMenuItem();
             this.帮助HToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.关于ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.skinEngine1 = new Sunisoft.IrisSkin.SkinEngine(((System.ComponentModel.Component)(this)));
+            // SkinEngine deferred to after InitializeComponent for Win25H2 compatibility
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
             this.splitContainer2.Panel1.SuspendLayout();
@@ -1029,7 +1032,12 @@
             this.contextMenuStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.刷新急速ToolStripMenuItem,
             this.刷新ToolStripMenuItem1,
-            this.结束进程ToolStripMenuItem});
+            new System.Windows.Forms.ToolStripSeparator(),
+            this.结束进程ToolStripMenuItem,
+            new System.Windows.Forms.ToolStripSeparator(),
+            this.挂起进程ToolStripMenuItem,
+            this.恢复进程ToolStripMenuItem,
+            this.设置优先级ToolStripMenuItem});
             this.contextMenuStrip2.Name = "contextMenuStrip2";
             this.contextMenuStrip2.Size = new System.Drawing.Size(133, 70);
             // 
@@ -1053,6 +1061,32 @@
             this.结束进程ToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
             this.结束进程ToolStripMenuItem.Text = "结束进程";
             this.结束进程ToolStripMenuItem.Click += new System.EventHandler(this.结束进程ToolStripMenuItem_Click);
+            //
+            // 挂起进程ToolStripMenuItem
+            //
+            this.挂起进程ToolStripMenuItem.Name = "挂起进程ToolStripMenuItem";
+            this.挂起进程ToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.挂起进程ToolStripMenuItem.Text = "挂起进程(&P)";
+            this.挂起进程ToolStripMenuItem.Click += new System.EventHandler(this.挂起进程ToolStripMenuItem_Click);
+            //
+            // 恢复进程ToolStripMenuItem
+            //
+            this.恢复进程ToolStripMenuItem.Name = "恢复进程ToolStripMenuItem";
+            this.恢复进程ToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.恢复进程ToolStripMenuItem.Text = "恢复进程(&U)";
+            this.恢复进程ToolStripMenuItem.Click += new System.EventHandler(this.恢复进程ToolStripMenuItem_Click);
+            //
+            // 设置优先级ToolStripMenuItem
+            //
+            this.设置优先级ToolStripMenuItem.Name = "设置优先级ToolStripMenuItem";
+            this.设置优先级ToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.设置优先级ToolStripMenuItem.Text = "设置优先级(&I)";
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("低", null, (s,ev) => SetProcessPriority("Idle"));
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("低于正常", null, (s,ev) => SetProcessPriority("BelowNormal"));
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("正常", null, (s,ev) => SetProcessPriority("Normal"));
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("高于正常", null, (s,ev) => SetProcessPriority("AboveNormal"));
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("高", null, (s,ev) => SetProcessPriority("High"));
+            this.设置优先级ToolStripMenuItem.DropDownItems.Add("实时", null, (s,ev) => SetProcessPriority("RealTime"));
             // 
             // richTextBox1
             // 
@@ -1167,8 +1201,8 @@
             this.toolStripButtonCaptureVideo.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.toolStripButtonCaptureVideo.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonCaptureVideo.Name = "toolStripButtonCaptureVideo";
-            this.toolStripButtonCaptureVideo.Size = new System.Drawing.Size(60, 45);
-            this.toolStripButtonCaptureVideo.Text = "视频语音";
+            this.toolStripButtonCaptureVideo.Size = new System.Drawing.Size(72, 45);
+            this.toolStripButtonCaptureVideo.Text = "摄像头";
             this.toolStripButtonCaptureVideo.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
             this.toolStripButtonCaptureVideo.Click += new System.EventHandler(this.toolStripButtonCaptureVideo_Click);
             // 
@@ -1248,9 +1282,12 @@
             // 
             // skinEngine1
             // 
-            this.skinEngine1.SerialNumber = "";
-            this.skinEngine1.SkinFile = null;
-            this.skinEngine1.SkinStreamMain = ((System.IO.Stream)(resources.GetObject("skinEngine1.SkinStreamMain")));
+            if (this.skinEngine1 != null)
+            {
+                this.skinEngine1.SerialNumber = "";
+                this.skinEngine1.SkinFile = null;
+                this.skinEngine1.SkinStreamMain = ((System.IO.Stream)(resources.GetObject("skinEngine1.SkinStreamMain")));
+            }
             // 
             // FrmMain
             // 
@@ -1264,7 +1301,7 @@
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "FrmMain";
-            this.Text = "远程控制服务端";
+            this.Text = "魔法师";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmMain_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmMain_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -1403,6 +1440,9 @@
         private System.Windows.Forms.ToolStripMenuItem 刷新ToolStripMenuItem1;
         private System.Windows.Forms.ColumnHeader columnHeader16;
         private System.Windows.Forms.ToolStripMenuItem 结束进程ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 挂起进程ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 恢复进程ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 设置优先级ToolStripMenuItem;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
         private System.Windows.Forms.Button buttonExeCode;
         private System.Windows.Forms.ToolStripMenuItem 打开文件ToolStripMenuItem;

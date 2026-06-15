@@ -26,11 +26,19 @@ namespace RemoteControl.Server
 
         private void SetApplicationIcon()
         {
-            Icon appIcon = Icon.ExtractAssociatedIcon(typeof(FrmBase).Assembly.Location);
-            if (appIcon != null)
+            try
             {
-                this.Icon = appIcon;
+                string location = typeof(FrmBase).Assembly.Location;
+                if (!string.IsNullOrEmpty(location) && System.IO.File.Exists(location))
+                {
+                    Icon appIcon = Icon.ExtractAssociatedIcon(location);
+                    if (appIcon != null)
+                    {
+                        this.Icon = appIcon;
+                    }
+                }
             }
+            catch { }
         }
 
         private void FrmBase_Load(object sender, EventArgs e)

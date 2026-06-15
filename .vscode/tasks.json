@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build RemoteControl (.NET Framework)",
+      "type": "shell",
+      "command": "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\MSBuild.exe",
+      "args": [
+        "RemoteControl.sln",
+        "/p:Configuration=Debug",
+        "/p:Platform=x86",
+        "/verbosity:minimal"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build Relay (.NET 6)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "RemoteControl.Relay\\RemoteControl.Relay.csproj",
+        "--configuration",
+        "Debug",
+        "--nologo"
+      ],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

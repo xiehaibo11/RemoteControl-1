@@ -43,9 +43,36 @@
     <Compile Include="NativeMethods\WAVEOUTCAPS.cs" />
     <Compile Include="NativeMethods\WavFormat.cs" />
     <Compile Include="NativeMethods\WavMethods.cs" />
+    <Compile Include="NativeMethods\WavMethods.Input.cs">
+      <DependentUpon>WavMethods.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NativeMethods\WavMethods.Output.cs">
+      <DependentUpon>WavMethods.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WaveIn.cs" />
+    <Compile Include="WaveIn.Buffers.cs">
+      <DependentUpon>WaveIn.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WaveIn.BufferItem.cs">
+      <DependentUpon>WaveIn.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WaveIn.Properties.cs">
+      <DependentUpon>WaveIn.cs</DependentUpon>
+    </Compile>
     <Compile Include="WaveOut.cs" />
+    <Compile Include="WaveOut.Playback.cs">
+      <DependentUpon>WaveOut.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WaveOut.PlayItem.cs">
+      <DependentUpon>WaveOut.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WaveOut.Properties.cs">
+      <DependentUpon>WaveOut.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WaveOut.Volume.cs">
+      <DependentUpon>WaveOut.cs</DependentUpon>
+    </Compile>
     <Compile Include="WavInDevice.cs" />
     <Compile Include="WavOutDevice.cs" />
   </ItemGroup>

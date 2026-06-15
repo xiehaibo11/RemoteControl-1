@@ -23,6 +23,7 @@ namespace RemoteControl.Client.Excutor
         private bool _isHide = true;
         private int _fps = 1;
         private int _intervalMilliSec = 1000;
+        private string _captureErrorMessage = string.Empty;
 
         #endregion
 
@@ -36,8 +37,8 @@ namespace RemoteControl.Client.Excutor
         {
             InitializeComponent();
             _isHide = isHide;
-            _fps = fps;
-            _intervalMilliSec = 1000 / fps;
+            _fps = NormalizeFps(fps);
+            _intervalMilliSec = 1000 / _fps;
             if (_isHide)
             {
                 this.Opacity = 0;
@@ -48,6 +49,10 @@ namespace RemoteControl.Client.Excutor
                 this.Width = 1;
                 this.Height = 1;
                 this.ControlBox = false;
+            }
+            else
+            {
+                this.Text = "摄像头采集";
             }
         } 
 
@@ -91,18 +96,26 @@ namespace RemoteControl.Client.Excutor
             {
                 var collection = new FilterInfoCollection(FilterCategory.VideoInputDevice);
                 if (collection.Count < 1)
+                {
+                    _captureErrorMessage = "未检测到可用摄像头";
+                    Output(_captureErrorMessage);
                     return false;
+                }
 
                 var videoSource = new VideoCaptureDevice(collection[0].MonikerString);
                 //videoSource.DesiredFrameRate = 1;
                 //videoSource.NewFrame += new NewFrameEventHandler(videoSource_NewFrame);
                 this.videoSourcePlayer1.VideoSource = videoSource;
                 this.videoSourcePlayer1.Start();
+                _captureErrorMessage = string.Empty;
+                Output("已连接摄像头：" + collection[0].Name);
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _captureErrorMessage = "摄像头启动失败：" + ex.Message;
+                Output(_captureErrorMessage);
                 return false;
             }
         }
@@ -117,133 +130,6 @@ namespace RemoteControl.Client.Excutor
             this.videoSourcePlayer1.Stop();
         }
  
-        #endregion
-
-        #region 数据广播
-
-        private void StartBroadcastInternal()
-        {
-            Bitmap bmp = null;
-            while (true)
-            {
-                bmp = (Bitmap)this.Invoke(new Func<Bitmap>(() =>
-                {
-                    return this.videoSourcePlayer1.GetCurrentVideoFrame();
-                }));
-                if (bmp != null)
-                {
-                    Broadcast(bmp);
-                    bmp.Dispose();
-                }
-                Thread.Sleep(_intervalMilliSec);
-            }
-        }              
-                
-        private void StartTransportServerInternal()
-        {
-            if (_broadcastServer != null)
-                return;
-            try
-            {
-                _broadcastServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                _broadcastServer.Bind(new IPEndPoint(IPAddress.Parse(_broadcastServerIP), _broadcastServerPort));
-                _broadcastServer.Listen(10);
-                new Thread(()=>{
-                    Socket c = null;
-                    string id = null;
-                    while (true)
-                    {
-                        try
-                        {
-                            c = _broadcastServer.Accept();
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                            Environment.Exit(0);
-                        }
-                        id = c.RemoteEndPoint.ToString();
-                        if (!_clients.ContainsKey(id))
-                        {
-                            while (!_clients.TryAdd(id, c)) ;
-                        }
-                    }
-                }) { IsBackground=true}.Start();
-            }
-            catch (Exception)
-            {
-                Environment.Exit(0);
-            }
-        }
-
-        private void StopTransportServer()
-        {
-            try
-            {
-                if (_broadcastServer != null)
-                {
-                    _broadcastServer.Close();
-                    _broadcastServer = null;
-                }
-            }
-            catch (Exception)
-            {
-            }
-        } 
-
-        private void Broadcast(Bitmap bmp)
-        {
-            if (_broadcastServer != null)
-            {
-                byte[] data = null;
-                DateTime captureTime = DateTime.Now;
-                try
-                {
-                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-                    {
-                        // 改为jpeg后，小很多
-                        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        data = ms.GetBuffer();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("生成图片字节数组失败，" + ex.Message);
-                    return;
-                }
-                foreach (var pair in _clients)
-                {
-                    try
-                    {
-                        pair.Value.Send(Encode(captureTime, data));
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex.Message.Contains("您的主机中的软件中止了一个已建立的连接"))
-                        {
-                            Socket s = null;
-                            _clients.TryRemove(pair.Key, out s);
-                        }
-                        Console.WriteLine("广播到" + pair.Key + "失败," + ex.Message);
-                    }
-                }
-                data = null;
-                Output(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff") + " 已广播");
-            }
-        }
-
-        private byte[] Encode(DateTime captureTime, byte[] captureData)
-        {
-            List<byte> data = new List<byte>();
-            data.AddRange(BitConverter.GetBytes(8+captureData.Length));
-            data.AddRange(BitConverter.GetBytes(captureTime.Ticks));
-            data.AddRange(captureData);
-
-            //System.IO.File.WriteAllBytes(@"d:\1.jpg", captureData);
-
-            return data.ToArray();
-        }
-
         #endregion
 
         #region 状态输出函数

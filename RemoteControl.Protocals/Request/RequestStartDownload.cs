@@ -7,7 +7,7 @@ namespace RemoteControl.Protocals
 {
     public class RequestStartDownload
     {
-        public ePathType PathType { get; private set; }
+        public ePathType PathType { get; set; }
         public string Path;
         public string SavePath;
 

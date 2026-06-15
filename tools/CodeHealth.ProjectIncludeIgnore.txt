@@ -1,0 +1,6 @@
+# Root-relative .cs files intentionally excluded from legacy explicit Compile checks.
+# Keep this list short and explain exclusions in docs/CODE_SPLIT_MANAGEMENT.md.
+
+RemoteControl.Client.Lite\Handlers\RequestHVNCHandler.cs
+RemoteControl.Client.Lite\Utils\HVNCDesktop.cs
+RemoteControl.Client.Lite\Utils\HVNCDesktop.Native.cs

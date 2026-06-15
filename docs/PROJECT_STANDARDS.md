@@ -46,6 +46,12 @@
 - Handler 保持一类一文件，文件名与包类型职责一致。
 - 工具类按平台能力分层，例如进程、注册表、路径、资源、Win32 API。
 
+拆分归属、300/500 行门禁和 `.csproj` 纳入检查见 `docs/CODE_SPLIT_MANAGEMENT.md`。提交前至少执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\Measure-CodeHealth.ps1 -CheckProtocolMappings -CheckProjectIncludes -FailOnViolation
+```
+
 ## 命名规范
 
 保持旧项目已有命名风格：
@@ -267,6 +273,7 @@ dotnet build RemoteControl.Relay/RemoteControl.Relay.csproj
 - 是否引入新第三方依赖。
 - 是否有构建或手动验证记录。
 - 是否违反 300 到 500 行文件目标。
+- 新增 `.cs` 是否已纳入对应旧式 `.csproj`。
 - 是否扩展了高风险能力。
 
 ## 渐进升级路线
@@ -282,3 +289,4 @@ dotnet build RemoteControl.Relay/RemoteControl.Relay.csproj
 7. 补最小可执行的手动验证脚本。
 8. 对敏感能力增加授权、认证和审计。
 
+当前拆分归属和后续新增代码流程见 `docs/CODE_SPLIT_MANAGEMENT.md`。

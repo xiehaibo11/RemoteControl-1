@@ -13,25 +13,36 @@ namespace RemoteControl.Server
         public static List<string> lstSkins = new List<string>();
         public static RemoteControlServer oRemoteControlServer = null;
 
+        private static string AppDir
+        {
+            get
+            {
+                string exePath = Application.ExecutablePath;
+                if (!string.IsNullOrEmpty(exePath))
+                    return System.IO.Path.GetDirectoryName(exePath);
+                return Environment.CurrentDirectory;
+            }
+        }
+
         public static string GetPath(ePathType pathType)
         {
             string sPath = string.Empty;
             switch (pathType)
             {
                 case ePathType.APP:
-                    sPath = Application.ExecutablePath;
+                    sPath = Application.ExecutablePath ?? "";
                     break;
                 case ePathType.APP_DIR:
-                    sPath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+                    sPath = AppDir + "\\";
                     break;
                 case ePathType.SKINS_DIR:
-                    sPath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\Skins\\";
+                    sPath = AppDir + "\\Skins\\";
                     break;
                 case ePathType.AVATAR_DIR:
-                    sPath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\Avatars\\";
+                    sPath = AppDir + "\\Avatars\\";
                     break;
                 case ePathType.TOOL_DIR:
-                    sPath = System.IO.Path.GetDirectoryName(Application.ExecutablePath) + "\\Tools\\";
+                    sPath = AppDir + "\\Tools\\";
                     break;
             }
 
@@ -45,13 +56,18 @@ namespace RemoteControl.Server
             string sSkinPath = GetPath(ePathType.SKINS_DIR);
             if (!System.IO.Directory.Exists(sSkinPath))
                 return lstSkinFiles;
-            string[] arrDirecotry = System.IO.Directory.GetDirectories(sSkinPath);
-            for (int i = 0; i < arrDirecotry.Length; i++)
+
+            try
             {
-                string sDirectory = arrDirecotry[i];
-                // searchPattern,可以使用*或?字符进行模糊搜索，如果不使用则为精确搜索
-                string[] arrFile = System.IO.Directory.GetFiles(sDirectory, "*.ssk");
+                string[] arrFile = System.IO.Directory.GetFiles(
+                    sSkinPath,
+                    "*.ssk",
+                    System.IO.SearchOption.AllDirectories);
+                Array.Sort(arrFile, StringComparer.OrdinalIgnoreCase);
                 lstSkinFiles.AddRange(arrFile);
+            }
+            catch
+            {
             }
 
             return lstSkinFiles;

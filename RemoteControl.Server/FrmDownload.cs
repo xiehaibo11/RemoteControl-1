@@ -39,7 +39,16 @@ namespace RemoteControl.Server
             }
             this.label1.Text = string.Format("{0}/{1}", recvedBytes, this._fileSize);
             this.progressBar1.Maximum = 100;
-            this.progressBar1.Value = (int)(recvedBytes * 1.0 / this._fileSize * 100);
+            int percent = 100;
+            if (this._fileSize > 0)
+            {
+                percent = (int)(recvedBytes * 100.0 / this._fileSize);
+                if (percent < 0)
+                    percent = 0;
+                if (percent > 100)
+                    percent = 100;
+            }
+            this.progressBar1.Value = percent;
         }
 
         private void button1_Click(object sender, EventArgs e)

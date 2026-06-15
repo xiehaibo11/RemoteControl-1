@@ -1,247 +1,131 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Drawing;
-using System.Management;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace RemoteControl.Client
 {
-    class ScreenUtil
+    partial class ScreenUtil
     {
-        private const int SRCCOPY = 0x00CC0020;
-        private const int CAPTUREBLT = 0x40000000;
-        private static bool? _hasHardwareDisplayAdapter;
+        private static int _preferredCaptureMode = -1;
 
-        /// <summary>
-        /// 捕获屏幕
-        /// <para>不支持未登陆时截图</para>
-        /// </summary>
-        /// <returns></returns>
-        public static Image CaptureScreen1()
+        private enum CaptureMode
         {
-            Image myImage = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
-            using (Graphics g = Graphics.FromImage(myImage))
-            {
-                g.CopyFromScreen(new Point(0, 0), new Point(0, 0), new Size(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height));
-            }
-
-            return myImage;
+            FastBitBlt = 0,
+            HwndBitBlt = 1,
+            CopyFromScreen = 2
         }
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetDC(IntPtr hWnd);
+        /// <summary>
+        /// 捕获屏幕。不支持未登录或锁屏安全桌面的场景。
+        /// </summary>
+        public static Image CaptureScreen1()
+        {
+            return CaptureScreenCopyFromScreen(GetCaptureBounds());
+        }
 
-        [DllImport("user32.dll")]
-        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
-
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
-
-        [DllImport("gdi32.dll")]
-        private static extern bool DeleteObject(IntPtr hObject);
-
-        [DllImport("gdi32.dll")]
-        private static extern bool DeleteDC(IntPtr hdc);
-
-        [DllImport("gdi32.dll", SetLastError = true)]
-        private static extern bool BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
+        /// <summary>
+        /// 捕获屏幕。GDI 兼容路径。
+        /// </summary>
+        public static Image CaptureScreen2()
+        {
+            return CaptureScreenHwndBitBlt(GetCaptureBounds());
+        }
 
         public static Image CaptureScreenOptimized()
         {
-            if (HasHardwareDisplayAdapter())
-            {
-                try
-                {
-                    return CaptureScreenFastBitBlt();
-                }
-                catch
-                {
-                    // 显卡优化路径失败时保持兼容，避免黑屏或中断远程协助。
-                }
-            }
-
-            return CaptureScreen2();
-        }
-
-        /// <summary>
-        /// 捕获屏幕
-        /// <para>支持未登陆时截图</para>
-        /// </summary>
-        /// <returns></returns>
-        public static Image CaptureScreen2()
-        {
-            int width = Screen.PrimaryScreen.Bounds.Width;
-            int height = Screen.PrimaryScreen.Bounds.Height;
-            Bitmap screenCopy = new Bitmap(width, height);
-            using (Graphics gDest = Graphics.FromImage(screenCopy))
-            using (Graphics gSrc = Graphics.FromHwnd(IntPtr.Zero))
-            {
-                IntPtr hSrcDC = IntPtr.Zero;
-                IntPtr hDC = IntPtr.Zero;
-                try
-                {
-                    hSrcDC = gSrc.GetHdc();
-                    hDC = gDest.GetHdc();
-                    BitBlt(hDC, 0, 0, width, height, hSrcDC, 0, 0, SRCCOPY | CAPTUREBLT);
-                }
-                finally
-                {
-                    if (hDC != IntPtr.Zero)
-                    {
-                        gDest.ReleaseHdc(hDC);
-                    }
-
-                    if (hSrcDC != IntPtr.Zero)
-                    {
-                        gSrc.ReleaseHdc(hSrcDC);
-                    }
-                }
-            }
-
-            return screenCopy;
-        }
-
-        private static Image CaptureScreenFastBitBlt()
-        {
-            Rectangle bounds = Screen.PrimaryScreen.Bounds;
-            IntPtr screenDC = IntPtr.Zero;
-            IntPtr memoryDC = IntPtr.Zero;
-            IntPtr bitmap = IntPtr.Zero;
-            IntPtr oldBitmap = IntPtr.Zero;
-
+            Rectangle bounds;
             try
             {
-                screenDC = GetDC(IntPtr.Zero);
-                if (screenDC == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException("GetDC failed.");
-                }
-
-                memoryDC = CreateCompatibleDC(screenDC);
-                if (memoryDC == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException("CreateCompatibleDC failed.");
-                }
-
-                bitmap = CreateCompatibleBitmap(screenDC, bounds.Width, bounds.Height);
-                if (bitmap == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException("CreateCompatibleBitmap failed.");
-                }
-
-                oldBitmap = SelectObject(memoryDC, bitmap);
-                if (!BitBlt(memoryDC, 0, 0, bounds.Width, bounds.Height, screenDC, bounds.X, bounds.Y, SRCCOPY | CAPTUREBLT))
-                {
-                    throw new InvalidOperationException("BitBlt failed.");
-                }
-
-                using (Bitmap captured = Image.FromHbitmap(bitmap))
-                {
-                    return new Bitmap(captured);
-                }
+                bounds = GetCaptureBounds();
             }
-            finally
+            catch (Exception ex)
             {
-                if (memoryDC != IntPtr.Zero && oldBitmap != IntPtr.Zero)
-                {
-                    SelectObject(memoryDC, oldBitmap);
-                }
-
-                if (bitmap != IntPtr.Zero)
-                {
-                    DeleteObject(bitmap);
-                }
-
-                if (memoryDC != IntPtr.Zero)
-                {
-                    DeleteDC(memoryDC);
-                }
-
-                if (screenDC != IntPtr.Zero)
-                {
-                    ReleaseDC(IntPtr.Zero, screenDC);
-                }
-            }
-        }
-
-        private static bool HasHardwareDisplayAdapter()
-        {
-            if (_hasHardwareDisplayAdapter.HasValue)
-            {
-                return _hasHardwareDisplayAdapter.Value;
+                return CreateDiagnosticImage(new Rectangle(0, 0, 640, 360), ex);
             }
 
-            bool result = false;
-            try
+            List<CaptureMode> modes = BuildCaptureModeOrder();
+            Exception lastException = null;
+            Bitmap lastBlackFrame = null;
+
+            for (int i = 0; i < modes.Count; i++)
             {
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Name,AdapterCompatibility,PNPDeviceID FROM Win32_VideoController"))
+                CaptureMode mode = modes[i];
+                try
                 {
-                    foreach (ManagementObject adapter in searcher.Get())
+                    Bitmap image = CaptureByMode(mode, bounds);
+                    if (!IsMostlyBlackFrame(image))
                     {
-                        string name = Convert.ToString(adapter["Name"]);
-                        string vendor = Convert.ToString(adapter["AdapterCompatibility"]);
-                        string pnpId = Convert.ToString(adapter["PNPDeviceID"]);
-                        string text = (name + " " + vendor + " " + pnpId).ToLowerInvariant();
-                        if (string.IsNullOrWhiteSpace(text))
+                        _preferredCaptureMode = (int)mode;
+                        if (lastBlackFrame != null)
                         {
-                            continue;
+                            lastBlackFrame.Dispose();
                         }
+                        return image;
+                    }
 
-                        if (!IsSoftwareOrVirtualDisplayAdapter(text))
-                        {
-                            result = true;
-                            break;
-                        }
+                    if (lastBlackFrame != null)
+                    {
+                        lastBlackFrame.Dispose();
+                    }
+                    lastBlackFrame = image;
+                    lastException = new InvalidOperationException(mode + " returned a black frame.");
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    if (_preferredCaptureMode == (int)mode)
+                    {
+                        _preferredCaptureMode = -1;
                     }
                 }
             }
-            catch
+
+            if (lastBlackFrame != null)
             {
-                result = false;
+                lastBlackFrame.Dispose();
             }
 
-            _hasHardwareDisplayAdapter = result;
-            return result;
+            return CreateDiagnosticImage(bounds, lastException);
         }
 
-        private static bool IsSoftwareOrVirtualDisplayAdapter(string text)
+        private static List<CaptureMode> BuildCaptureModeOrder()
         {
-            string[] tokens = new string[]
+            List<CaptureMode> modes = new List<CaptureMode>();
+            if (Enum.IsDefined(typeof(CaptureMode), _preferredCaptureMode))
             {
-                "basic display",
-                "microsoft remote",
-                "remote display",
-                "rdp",
-                "mirror",
-                "mirage",
-                "virtual",
-                "vmware",
-                "vbox",
-                "citrix",
-                "parsec",
-                "gameviewer",
-                "mumu",
-                "root\\display"
-            };
-
-            foreach (string token in tokens)
-            {
-                if (text.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
+                modes.Add((CaptureMode)_preferredCaptureMode);
             }
 
-            return false;
+            AddModeIfMissing(modes, CaptureMode.FastBitBlt);
+            AddModeIfMissing(modes, CaptureMode.HwndBitBlt);
+            AddModeIfMissing(modes, CaptureMode.CopyFromScreen);
+            return modes;
         }
+
+        private static void AddModeIfMissing(List<CaptureMode> modes, CaptureMode mode)
+        {
+            if (!modes.Contains(mode))
+            {
+                modes.Add(mode);
+            }
+        }
+
+        private static Bitmap CaptureByMode(CaptureMode mode, Rectangle bounds)
+        {
+            switch (mode)
+            {
+                case CaptureMode.FastBitBlt:
+                    return CaptureScreenFastBitBlt(bounds);
+                case CaptureMode.HwndBitBlt:
+                    return CaptureScreenHwndBitBlt(bounds);
+                case CaptureMode.CopyFromScreen:
+                    return CaptureScreenCopyFromScreen(bounds);
+                default:
+                    throw new NotSupportedException(mode.ToString());
+            }
+        }
+
     }
 }

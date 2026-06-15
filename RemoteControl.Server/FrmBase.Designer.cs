@@ -39,7 +39,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "FrmBase";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "远程控制";
+            this.Text = "魔法师";
             this.Load += new System.EventHandler(this.FrmBase_Load);
             this.ResumeLayout(false);
 

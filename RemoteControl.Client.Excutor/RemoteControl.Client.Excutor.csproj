@@ -68,6 +68,9 @@
     <Compile Include="FrmCamCapture.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FrmCamCapture.Broadcast.cs">
+      <DependentUpon>FrmCamCapture.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmCamCapture.Designer.cs">
       <DependentUpon>FrmCamCapture.cs</DependentUpon>
     </Compile>

@@ -30,5 +30,6 @@ RemoteControl.Client.Generated.exe
 Thumbs.db
 Desktop.ini
 .idea/
-.vscode/
-
+.vscode/*
+!.vscode/
+!.vscode/tasks.json

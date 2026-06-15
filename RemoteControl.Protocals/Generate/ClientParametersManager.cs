@@ -15,6 +15,9 @@ namespace RemoteControl.Protocals
             
             int paraSize = Marshal.SizeOf(typeof(ClientParameters));
             byte[] fileData = System.IO.File.ReadAllBytes(filePath);
+            if (fileData.Length < paraSize)
+                return p;
+
             byte[] paraData = fileData.ToList().SplitBytes(fileData.Length - paraSize, paraSize);
             for (int i = 0; i < 4; i++)
             {
@@ -31,12 +34,17 @@ namespace RemoteControl.Protocals
         public static ClientStyle ReadClientStyle(string filePath)
         {
             byte[] data = System.IO.File.ReadAllBytes(filePath);
+            if (data.Length <= 0xdc)
+                return ClientStyle.Normal;
 
             return (ClientStyle)data[0xdc];
         }
 
         public static void WriteClientStyle(byte[] sourceFileData, ClientStyle style)
         {
+            if (sourceFileData == null || sourceFileData.Length <= 0xdc)
+                return;
+
             sourceFileData[0xdc] = (byte)style;
         }
 
@@ -68,38 +76,54 @@ namespace RemoteControl.Protocals
 
         public static void WriteClientStyle(string filePath, ClientStyle style)
         {
-            FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Write);
-            fs.Seek(0xdc, SeekOrigin.Begin);
-            fs.WriteByte((byte)style);
-            fs.Close();
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
+            {
+                if (fs.Length <= 0xdc)
+                    return;
+
+                fs.Seek(0xdc, SeekOrigin.Begin);
+                fs.WriteByte((byte)style);
+            }
         }
 
         public static void WriteParameters(byte[] sourceFileData, string destFileName, ClientParameters para)
         {
             int paraSize = Marshal.SizeOf(typeof(ClientParameters));
-            byte[] paraData = sourceFileData.ToList().SplitBytes(sourceFileData.Length - paraSize, paraSize);
+            bool sourceHasParameterSpace = sourceFileData != null && sourceFileData.Length >= paraSize;
             bool paraExists = true;
-            for (int i = 0; i < 4; i++)
+            if (sourceHasParameterSpace)
             {
-                if (paraData[i] != 0xff)
+                byte[] paraData = sourceFileData.ToList().SplitBytes(sourceFileData.Length - paraSize, paraSize);
+                for (int i = 0; i < 4; i++)
                 {
-                    paraExists = false;
-                    break;
+                    if (paraData[i] != 0xff)
+                    {
+                        paraExists = false;
+                        break;
+                    }
                 }
-            }
-            para.InitHeader();
-            byte[] paraDataNew = Struct2ByteArray(para);
-            System.IO.FileStream fs = new System.IO.FileStream(destFileName, FileMode.Create, FileAccess.Write);
-            if (paraExists)
-            {
-                fs.Write(sourceFileData, 0, sourceFileData.Length - paraSize);
             }
             else
             {
-                fs.Write(sourceFileData, 0, sourceFileData.Length);
+                paraExists = false;
             }
-            fs.Write(paraDataNew, 0, paraDataNew.Length);
-            fs.Close();
+            para.InitHeader();
+            byte[] paraDataNew = Struct2ByteArray(para);
+            using (System.IO.FileStream fs = new System.IO.FileStream(destFileName, FileMode.Create, FileAccess.Write))
+            {
+                if (sourceFileData != null)
+                {
+                    if (paraExists)
+                    {
+                        fs.Write(sourceFileData, 0, sourceFileData.Length - paraSize);
+                    }
+                    else
+                    {
+                        fs.Write(sourceFileData, 0, sourceFileData.Length);
+                    }
+                }
+                fs.Write(paraDataNew, 0, paraDataNew.Length);
+            }
         }
 
         public static void WriteParameters(string filePath, ClientParameters para)
@@ -112,11 +136,18 @@ namespace RemoteControl.Protocals
         {
             int size = Marshal.SizeOf(obj.GetType());
             IntPtr ptr = Marshal.AllocHGlobal(size);
-            Marshal.StructureToPtr(obj, ptr, true);
-            byte[] bytes = new byte[size];
-            Marshal.Copy(ptr, bytes, 0, bytes.Length);
+            try
+            {
+                Marshal.StructureToPtr(obj, ptr, false);
+                byte[] bytes = new byte[size];
+                Marshal.Copy(ptr, bytes, 0, bytes.Length);
 
-            return bytes;
+                return bytes;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         private static T ByteArray2Struct<T>(byte[] data) where T:struct
@@ -124,8 +155,15 @@ namespace RemoteControl.Protocals
             T obj = new T();
 
             IntPtr ptr = Marshal.AllocHGlobal(data.Length);
-            Marshal.Copy(data, 0, ptr, data.Length);
-            return (T)Marshal.PtrToStructure(ptr, typeof(T));
+            try
+            {
+                Marshal.Copy(data, 0, ptr, data.Length);
+                return (T)Marshal.PtrToStructure(ptr, typeof(T));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         public enum ClientStyle

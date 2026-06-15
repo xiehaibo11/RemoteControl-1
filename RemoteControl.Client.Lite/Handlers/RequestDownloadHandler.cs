@@ -1,80 +1,146 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using RemoteControl.Protocals;
-using Microsoft.Win32;
-using System.Threading;
+using System;
 using System.IO;
+using RemoteControl.Protocals;
 using RemoteControl.Protocals.Response;
 
 namespace RemoteControl.Client.Handlers
 {
-    class RequestDownloadHandler : AbstractRequestHandler
+    partial class RequestDownloadHandler : AbstractRequestHandler
     {
         private bool _isRunning = false;
         private RequestStartDownload _request = null;
+        private string _transferPath = null;
+        private bool _deleteTransferFileWhenDone = false;
+
         public override void Handle(SocketSession session, ePacketType reqType, object reqObj)
         {
             if (reqType == ePacketType.PACKET_START_DOWNLOAD_REQUEST)
             {
-                // 开始
                 RequestStartDownload req = reqObj as RequestStartDownload;
-                if (_request == null)
-                {
-                    _request = req;
-                    _isRunning = true;
+                if (req == null)
+                    return;
 
-                    // 返回文件基本信息
-                    ResponseStartDownloadHeader headerResp = new ResponseStartDownloadHeader();
-                    using (var fs = System.IO.File.OpenRead(req.Path))
-                    {
-                        headerResp.FileSize = fs.Length;
-                        headerResp.Path = req.Path;
-                        headerResp.SavePath = req.SavePath;
-                    }
-                    session.Send(ePacketType.PACKET_START_DOWNLOAD_HEADER_RESPONSE, headerResp);
-                    // 开始返回文件内容
+                if (_request != null)
+                    return;
+
+                try
+                {
+                    PrepareDownload(req, session);
                     RunTaskThread(StartDownload, session);
                 }
-                else
+                catch (Exception ex)
                 {
-                    // 每次只能下载一个文件
-                    return;
+                    ResetState();
+                    SendDownloadError(session, ex);
                 }
             }
             else if (reqType == ePacketType.PACKET_STOP_DOWNLOAD_REQUEST)
             {
-                // 停止
                 _isRunning = false;
             }
         }
 
+        private void PrepareDownload(RequestStartDownload req, SocketSession session)
+        {
+            _request = req;
+            _isRunning = true;
+            _deleteTransferFileWhenDone = false;
+
+            string transferPath = req.Path;
+            string displayPath = req.Path;
+            if (req.PathType == ePathType.Directory)
+            {
+                transferPath = CreateDirectoryZip(req.Path);
+                displayPath = req.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + ".zip";
+                _deleteTransferFileWhenDone = true;
+            }
+
+            _transferPath = transferPath;
+            ResponseStartDownloadHeader headerResp = new ResponseStartDownloadHeader();
+            using (FileStream fs = File.Open(transferPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                headerResp.FileSize = fs.Length;
+                headerResp.Path = displayPath;
+                headerResp.SavePath = req.SavePath;
+            }
+            session.Send(ePacketType.PACKET_START_DOWNLOAD_HEADER_RESPONSE, headerResp);
+        }
+
         private void StartDownload(SocketSession session)
         {
-            FileStream fs = new FileStream(_request.Path, FileMode.Open, FileAccess.Read);
-            byte[] buffer = new byte[2048];
-            while (true)
+            try
             {
-                if (!_isRunning)
+                using (FileStream fs = new FileStream(_transferPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    break;
-                }
-                int size = fs.Read(buffer, 0, buffer.Length);
-                if (size < 1)
-                    break;
+                    byte[] buffer = new byte[8192];
+                    while (_isRunning)
+                    {
+                        int size = fs.Read(buffer, 0, buffer.Length);
+                        if (size < 1)
+                            break;
 
-                ResponseStartDownload resp = new ResponseStartDownload();
-                resp.Data = new byte[size];
-                for (int i = 0; i < size; i++)
-                {
-                    resp.Data[i] = buffer[i];
+                        ResponseStartDownload resp = new ResponseStartDownload();
+                        resp.Data = new byte[size];
+                        Buffer.BlockCopy(buffer, 0, resp.Data, 0, size);
+                        session.Send(ePacketType.PACKET_START_DOWNLOAD_RESPONSE, resp);
+                    }
                 }
-                session.Send(ePacketType.PACKET_START_DOWNLOAD_RESPONSE, resp);
             }
-            fs.Close();
+            catch (Exception ex)
+            {
+                SendDownloadError(session, ex);
+            }
+            finally
+            {
+                CleanupTempTransferFile();
+                ResetState();
+            }
+        }
+
+        private void ResetState()
+        {
             _request = null;
+            _transferPath = null;
+            _deleteTransferFileWhenDone = false;
             _isRunning = false;
         }
+
+        private void CleanupTempTransferFile()
+        {
+            if (!_deleteTransferFileWhenDone || string.IsNullOrEmpty(_transferPath))
+                return;
+
+            try
+            {
+                if (File.Exists(_transferPath))
+                    File.Delete(_transferPath);
+            }
+            catch
+            {
+            }
+        }
+
+        private void SendDownloadError(SocketSession session, Exception ex)
+        {
+            ResponseStartDownload resp = new ResponseStartDownload();
+            resp.Result = false;
+            resp.Message = ex.Message;
+            resp.Detail = ex.ToString();
+            session.Send(ePacketType.PACKET_START_DOWNLOAD_RESPONSE, resp);
+        }
+
+        private static string CreateDirectoryZip(string sourceDir)
+        {
+            if (string.IsNullOrEmpty(sourceDir) || !Directory.Exists(sourceDir))
+                throw new DirectoryNotFoundException(sourceDir);
+
+            string tempFile = Path.Combine(
+                Path.GetTempPath(),
+                "rc_download_" + Guid.NewGuid().ToString("N") + ".zip");
+
+            ZipStoreWriter.CreateFromDirectory(sourceDir, tempFile);
+            return tempFile;
+        }
+
     }
 }

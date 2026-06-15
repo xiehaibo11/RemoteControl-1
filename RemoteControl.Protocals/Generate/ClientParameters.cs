@@ -26,7 +26,7 @@ namespace RemoteControl.Protocals
             {
                 throw new NotSupportedException("Only IPv4 server addresses are supported.");
             }
-            this.ServerIP = BitConverter.ToInt32(addressBytes, 0);
+            this.ServerIP = (long)(uint)BitConverter.ToInt32(addressBytes, 0);
         }
 
         public string GetServerIP()

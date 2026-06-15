@@ -77,7 +77,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(223, 29);
             this.label1.TabIndex = 1;
-            this.label1.Text = "远程控制服务端";
+            this.label1.Text = "魔法师";
             // 
             // FrmAbout
             // 

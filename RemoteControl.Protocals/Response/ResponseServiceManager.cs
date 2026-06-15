@@ -9,6 +9,9 @@ namespace RemoteControl.Protocals.Response
         public string DisplayName;
         public string Status;
         public string StartType;
+        public string Type;
+        public int PID;
+        public string Description;
     }
 
     public class ResponseServiceManager : ResponseBase

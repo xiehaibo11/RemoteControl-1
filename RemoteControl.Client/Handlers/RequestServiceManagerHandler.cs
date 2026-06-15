@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Management;
 using System.ServiceProcess;
 using RemoteControl.Protocals;
 using RemoteControl.Protocals.Request;
@@ -44,17 +45,47 @@ namespace RemoteControl.Client.Handlers
         private void SendServiceList(SocketSession session)
         {
             var services = ServiceController.GetServices();
+            var pidMap = new Dictionary<string, int>();
+            var descMap = new Dictionary<string, string>();
+            var startTypeMap = new Dictionary<string, string>();
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher("SELECT Name, ProcessId, Description, StartMode FROM Win32_Service"))
+                {
+                    foreach (ManagementObject mo in searcher.Get())
+                    {
+                        string name = Convert.ToString(mo["Name"]);
+                        int pid = Convert.ToInt32(mo["ProcessId"]);
+                        string desc = Convert.ToString(mo["Description"]);
+                        string startMode = Convert.ToString(mo["StartMode"]);
+                        pidMap[name] = pid;
+                        if (!string.IsNullOrEmpty(desc)) descMap[name] = desc;
+                        if (!string.IsNullOrEmpty(startMode)) startTypeMap[name] = startMode;
+                    }
+                }
+            }
+            catch { /* WMI not available, continue without PID/description */ }
+
             var list = new List<ServiceInfo>();
             foreach (var svc in services)
             {
                 using (svc)
                 {
+                    int pid = 0;
+                    pidMap.TryGetValue(svc.ServiceName, out pid);
+                    string desc = null;
+                    descMap.TryGetValue(svc.ServiceName, out desc);
+                    string startType = null;
+                    startTypeMap.TryGetValue(svc.ServiceName, out startType);
                     list.Add(new ServiceInfo
                     {
                         ServiceName = svc.ServiceName,
                         DisplayName = svc.DisplayName,
                         Status = svc.Status.ToString(),
-                        StartType = string.Empty
+                        StartType = startType ?? "",
+                        Type = svc.ServiceType.ToString(),
+                        PID = pid,
+                        Description = desc
                     });
                 }
             }

@@ -77,8 +77,8 @@
             this.toolStripButton2.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             this.toolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton2.Name = "toolStripButton2";
-            this.toolStripButton2.Size = new System.Drawing.Size(89, 28);
-            this.toolStripButton2.Text = "开始监控";
+            this.toolStripButton2.Size = new System.Drawing.Size(101, 28);
+            this.toolStripButton2.Text = "开始摄像头";
             this.toolStripButton2.Click += new System.EventHandler(this.toolStripButton2_Click);
             // 
             // toolStripButtonSave
@@ -237,8 +237,8 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(92, 17);
-            this.toolStripStatusLabel1.Text = "图像采集时间：";
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(104, 17);
+            this.toolStripStatusLabel1.Text = "摄像头采集时间：";
             // 
             // toolStripStatusLabel2
             // 
@@ -255,7 +255,7 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "FrmCaptureVideo";
-            this.Text = "抓取视频";
+            this.Text = "摄像头查看";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmCaptureVideo_FormClosing);
             this.Load += new System.EventHandler(this.FrmCaptureScreen_Load);
             this.toolStrip1.ResumeLayout(false);

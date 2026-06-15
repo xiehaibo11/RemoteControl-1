@@ -228,6 +228,11 @@ namespace RemoteControl.Relay
             session.HostName = handshake.HostName;
             session.OnlineAvatar = handshake.OnlineAvatar;
             session.AppPath = handshake.AppPath;
+            session.UserName = handshake.UserName;
+            session.LocalIP = handshake.LocalIP;
+            session.OSVersion = handshake.OSVersion;
+            session.Privilege = handshake.Privilege;
+            session.CameraStatus = handshake.CameraStatus;
             session.OnlineTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
             string clientId = session.SessionId;
@@ -384,6 +389,11 @@ namespace RemoteControl.Relay
         public string AppPath { get; set; } = "";
         public string OnlineAvatar { get; set; } = "";
         public string OnlineTime { get; set; } = "";
+        public string UserName { get; set; } = "";
+        public string LocalIP { get; set; } = "";
+        public string OSVersion { get; set; } = "";
+        public string Privilege { get; set; } = "";
+        public string CameraStatus { get; set; } = "";
         public string RemoteEndPoint { get; private set; }
 
         public ClientSession BoundController { get; set; }
@@ -484,6 +494,11 @@ namespace RemoteControl.Relay
         public string HostName { get; set; } = "";
         public string AppPath { get; set; } = "";
         public string OnlineAvatar { get; set; } = "";
+        public string UserName { get; set; } = "";
+        public string LocalIP { get; set; } = "";
+        public string OSVersion { get; set; } = "";
+        public string Privilege { get; set; } = "";
+        public string CameraStatus { get; set; } = "";
     }
 
     public class SelectClientData
@@ -562,7 +577,12 @@ namespace RemoteControl.Relay
                     IP = s.RemoteEndPoint,
                     AppPath = s.AppPath,
                     OnlineAvatar = s.OnlineAvatar,
-                    OnlineTime = s.OnlineTime
+                    OnlineTime = s.OnlineTime,
+                    UserName = s.UserName,
+                    LocalIP = s.LocalIP,
+                    OSVersion = s.OSVersion,
+                    Privilege = s.Privilege,
+                    CameraStatus = s.CameraStatus
                 });
             }
             return BuildPacket(CYCLER_RELAY_CLIENT_LIST_RESPONSE, new { Clients = list });
@@ -575,7 +595,12 @@ namespace RemoteControl.Relay
                 ClientId = client.SessionId,
                 HostName = client.HostName,
                 IP = client.RemoteEndPoint,
-                OnlineAvatar = client.OnlineAvatar
+                OnlineAvatar = client.OnlineAvatar,
+                UserName = client.UserName,
+                LocalIP = client.LocalIP,
+                OSVersion = client.OSVersion,
+                Privilege = client.Privilege,
+                CameraStatus = client.CameraStatus
             });
         }
 

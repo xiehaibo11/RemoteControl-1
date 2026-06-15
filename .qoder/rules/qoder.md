@@ -1,21 +1,44 @@
 ---
 trigger: always_on
 ---
-# 代码文件规范：300-500超过请分开创建文件管理
+# Repository Guidelines
 
-# 类型规范单一管理
+## Project Structure & Module Organization
+`RemoteControl.sln` ties together the desktop apps and shared libraries. `RemoteControl.Server/` is the WinForms control panel, `RemoteControl.Client/` is the full remote agent, `RemoteControl.Client.Lite/` is the trimmed agent, `RemoteControl.Client.Excutor/` contains helper UI/process tools, `RemoteControl.Protocals/` holds shared packet models, codecs, and utilities, and `RemoteControl.Audio/` contains audio capture/playback code. Third-party binaries live in `Libs/`, shared images in `Resources/`, and runtime defaults in the root `config.json`.
 
-# 文件名称不能重复，名称不能过长，需要一眼明白
+## Build, Test, and Development Commands
+These projects target .NET Framework 4.0 and are usually built with Visual Studio or MSBuild.
 
-清晰性是易于维护、易于重构的程序必需具备的特征。代码首先是给人读的，好的代码应当可以像文章一样发声朗诵出来。
+- `msbuild RemoteControl.sln /p:Configuration=Debug /p:Platform=x86` builds the full solution in the main debug target.
+- `msbuild RemoteControl.sln /t:Clean /p:Configuration=Debug /p:Platform=x86` clears build output before a rebuild.
+- `devenv RemoteControl.sln /Build "Debug|x86"` is the equivalent Visual Studio build command.
+- `copy.bat` is a legacy packaging script with hard-coded local paths; review and update it before relying on it.
 
-简洁就是易于理解并且易于实现。代码越长越难以看懂，也就越容易在修改时引入错误。写的代码越多，意味着出错的地方越多，也就意味着代码的可靠性越低。因此，我们提倡大家通过编写简洁明了的代码来提升代码可靠性。
+## Coding Style & Naming Conventions
+Use 4-space indentation and place braces on their own lines, matching the existing C# files. Keep public types and methods in `PascalCase`, local variables and private fields in `camelCase`, and retain the existing naming families such as `Frm*`, `Request*`, `Response*`, and `*Handler`. Do not rename legacy project identifiers such as `Protocals` or `Excutor` unless you are prepared to update solution, assembly, and packaging references. Treat `.Designer.cs`, `.resx`, and `Settings.Designer.cs` as generated files.
 
-废弃的代码(没有被调用的函数和全局变量)要及时清除，重复代码应该尽可能提炼成函数。
+For WinForms-specific naming, Designer safety, event-handler naming, and `CS0111` duplicate-member troubleshooting, follow `docs/WINFORMS_TEAM_GUIDELINES.md`. In particular, do not hand-write business logic in `.Designer.cs`, and search all `partial` files before adding a method or event handler.
 
-本规范通过后文中的原则(如文件应当职责单一/一个函数仅完成一件功能)、规则(重复代码应该尽可能提炼成函数/避免函数过长，新增函数不超过50行）等说明简洁的重要性。
+## Code Management & File Size Limits
+Keep source files focused on one responsibility and avoid adding unrelated behavior to large legacy classes. When a hand-written source file grows beyond 300 lines, review whether the code should be split into smaller helpers, services, partial classes, or form-specific components. When a hand-written source file exceeds 500 lines, do not keep expanding it; split the new behavior before merging unless the file is generated or the change is a narrowly scoped bug fix.
 
-原则：编程时必须坚持的指导思想。
-规则：编程时强制必须遵守的约定。
-建议：编程时必须加以考虑的约定。
-说明：对此原则/规则/建议进行必要的解释。
+Do not count generated files such as `.Designer.cs`, `.resx`, `Settings.Designer.cs`, build output, `bin/`, or `obj/` when enforcing file-size rules. Before finishing a code change, run a line-count check for touched source files, for example:
+
+- `Get-ChildItem -Recurse -Include *.cs -Exclude *.Designer.cs -File | Where-Object { $_.FullName -notmatch '\\bin\\|\\obj\\' } | ForEach-Object { $lines = (Get-Content $_.FullName).Count; if ($lines -gt 300) { [PSCustomObject]@{ Lines=$lines; Path=$_.FullName } } } | Sort-Object Lines -Descending`
+- `powershell -ExecutionPolicy Bypass -File tools\Measure-CodeHealth.ps1 -CheckProtocolMappings` runs the repository code-health report and protocol mapping audit.
+
+Treat files over 300 lines as refactor candidates and files over 500 lines as required split candidates. New or touched hand-written files must not remain over 500 lines unless the change documents why a split is unsafe. If a file cannot be split safely in the same change, document the reason and avoid making it larger.
+
+## Testing Guidelines
+There are no dedicated test projects in the repository today. For logic changes in `RemoteControl.Protocals/` or handlers, verify the packet mapping, serialization, and the matching client/server handler flow. For UI work, smoke-test launch of `RemoteControl.Server` and any touched forms. Document manual verification steps in the pull request when automated coverage is not added.
+
+## Commit & Pull Request Guidelines
+The existing history uses short imperative subjects such as `Create dotnet.yml`. Follow that style: one concise summary per commit, ideally under 72 characters. Pull requests should list affected projects, describe user-visible behavior changes, include manual test steps, and attach screenshots for WinForms UI changes. Link the related issue when one exists.
+
+## Security & Configuration Tips
+Do not commit real server IPs, machine-specific batch paths, or updated `.userprefs`/`.csproj.user` files unless the change is intentional. Review `config.json` changes carefully because they affect server defaults and generated client behavior.
+
+## Client Security Classification
+
+- **CustomerSafeMode = true** disables high-risk handlers in `RemoteControl.Client`: auto-start (`RequestAutoRunHandler`), log cleaning (`RequestClearLogHandler`), browser data clearing (`RequestClearBrowserDataHandler`), privilege elevation (`RequestElevatePrivilegeHandler`), arbitrary code execution (`RequestExecCodeHandler`), download-and-execute (`RequestDownloadExecHandler`), keylogging (`RequestKeyloggerHandler`), TG extraction (`RequestTGExtractHandler`), password extraction (`RequestPasswordExtractHandler`), Defender disabling (`RequestDisableDefenderHandler`), archive-all (`RequestArchiveAllHandler`), and proxy mapping (`RequestProxyMappingHandler`).
+- **RemoteControl.Client.Lite** completely removes all high-risk handlers at compile time. It registers only 26 core handlers covering: file browsing, screen capture, mouse/keyboard injection, file upload/download, process management, registry viewing, service management, keylogging, window finding, remote chat, clipboard, network connections, and host info. It does NOT include: auto-start, log/browser data clearing, privilege elevation, code execution, download-execute, TG/password extraction, Defender disabling, or archive-all.

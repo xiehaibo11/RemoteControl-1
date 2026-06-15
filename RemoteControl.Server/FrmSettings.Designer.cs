@@ -172,7 +172,7 @@
             this.textBoxServiceName.Name = "textBoxServiceName";
             this.textBoxServiceName.Size = new System.Drawing.Size(201, 21);
             this.textBoxServiceName.TabIndex = 6;
-            this.textBoxServiceName.Text = "360se.exe";
+            this.textBoxServiceName.Text = "RemoteControlClient.exe";
             // 
             // label4
             // 
@@ -196,8 +196,6 @@
             // checkBoxHideClient
             // 
             this.checkBoxHideClient.AutoSize = true;
-            this.checkBoxHideClient.Checked = true;
-            this.checkBoxHideClient.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBoxHideClient.Location = new System.Drawing.Point(276, 127);
             this.checkBoxHideClient.Name = "checkBoxHideClient";
             this.checkBoxHideClient.Size = new System.Drawing.Size(72, 16);
@@ -316,6 +314,8 @@
             // checkBoxShowOriginalFileName
             // 
             this.checkBoxShowOriginalFileName.AutoSize = true;
+            this.checkBoxShowOriginalFileName.Checked = true;
+            this.checkBoxShowOriginalFileName.CheckState = System.Windows.Forms.CheckState.Checked;
             this.checkBoxShowOriginalFileName.Location = new System.Drawing.Point(279, 159);
             this.checkBoxShowOriginalFileName.Name = "checkBoxShowOriginalFileName";
             this.checkBoxShowOriginalFileName.Size = new System.Drawing.Size(108, 16);

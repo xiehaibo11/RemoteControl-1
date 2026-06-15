@@ -28,7 +28,9 @@ namespace RemoteControl.Server
                 var avatar = new PictureBox();
                 avatar.Width = 42;
                 avatar.Height = 42;
-                avatar.BackgroundImage = Image.FromFile(file);
+                avatar.BackgroundImage = LoadImageCopy(file);
+                if (avatar.BackgroundImage == null)
+                    continue;
                 avatar.BackgroundImageLayout = ImageLayout.Stretch;
                 avatar.Tag = file;
                 avatar.Margin = new Padding(10, 5, 10, 5);
@@ -36,6 +38,23 @@ namespace RemoteControl.Server
                 avatar.MouseLeave += new EventHandler(avatar_MouseLeave);
                 avatar.MouseDoubleClick += new MouseEventHandler(avatar_MouseDoubleClick);
                 this.flowLayoutPanel1.Controls.Add(avatar);
+            }
+        }
+
+        private static Image LoadImageCopy(string file)
+        {
+            if (string.IsNullOrEmpty(file) || !System.IO.File.Exists(file))
+                return null;
+            try
+            {
+                using (Image image = Image.FromFile(file))
+                {
+                    return new Bitmap(image);
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
 

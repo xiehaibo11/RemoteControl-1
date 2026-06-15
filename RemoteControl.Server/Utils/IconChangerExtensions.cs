@@ -27,12 +27,16 @@ namespace RemoteControl.Server.Utils
         {
             // 字节数组转IntPtr
             IntPtr ptr = Marshal.AllocHGlobal(data.Length);
-            Marshal.Copy(data, 0, ptr, data.Length);
-            // IntPtr转struct
-            T result = (T)Marshal.PtrToStructure(ptr, typeof(T));
-            Marshal.Release(ptr);
-
-            return result;
+            try
+            {
+                Marshal.Copy(data, 0, ptr, data.Length);
+                // IntPtr转struct
+                return (T)Marshal.PtrToStructure(ptr, typeof(T));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         public static IntPtr ToPtr(this byte[] data)
@@ -47,12 +51,18 @@ namespace RemoteControl.Server.Utils
         {
             int size = Marshal.SizeOf(typeof(T));
             IntPtr ptr = Marshal.AllocHGlobal(size);
-            Marshal.StructureToPtr(obj, ptr, true);
-            byte[] buffer = new byte[size];
-            Marshal.Copy(ptr, buffer, 0, buffer.Length);
-            Marshal.FreeHGlobal(ptr);
+            try
+            {
+                Marshal.StructureToPtr(obj, ptr, false);
+                byte[] buffer = new byte[size];
+                Marshal.Copy(ptr, buffer, 0, buffer.Length);
 
-            return buffer;
+                return buffer;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
         }
 
         public static IntPtr ToPtr<T>(this T obj) where T:struct

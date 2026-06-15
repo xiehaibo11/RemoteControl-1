@@ -82,7 +82,7 @@
 - 客户端是否注册 Handler。
 - 服务端是否处理响应。
 
-可以使用 `tools/Measure-CodeHealth.ps1` 辅助检查文件长度，协议一致性仍需人工确认。
+可以使用 `tools/Measure-CodeHealth.ps1` 辅助检查文件长度，协议一致性仍需人工确认。拆分归属、300/500 行门禁和 `.csproj` 纳入检查见 `docs/CODE_SPLIT_MANAGEMENT.md`。
 
 ## Step 5: Build and Manual Verification
 
@@ -115,4 +115,3 @@ msbuild RemoteControl.sln /p:Configuration=Debug /p:Platform=x86
 - 再看是否移动了字段初始化顺序。
 - 再看事件绑定是否仍指向原方法。
 - 最后回退本次移动，不回退其他用户改动。
-

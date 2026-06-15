@@ -72,6 +72,12 @@ namespace RemoteControl.Client
             }
         }
 
+        public static void Reset()
+        {
+            MessagerReceived = null;
+            Close();
+        }
+
         private static void DoMessagerReceived(List<byte> data)
         {
             if (MessagerReceived != null)

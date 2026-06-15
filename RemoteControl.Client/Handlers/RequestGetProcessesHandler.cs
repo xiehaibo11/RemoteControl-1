@@ -1,26 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using RemoteControl.Protocals;
-using Microsoft.Win32;
-using RemoteControl.Audio;
-using RemoteControl.Audio.Codecs;
 using System.Threading;
-using System.IO;
-using RemoteControl.Protocals.Utilities;
-using System.Diagnostics;
+using RemoteControl.Protocals;
+using RemoteControl.Protocals.Request;
 
 namespace RemoteControl.Client.Handlers
 {
-    class RequestGetProcessesHandler : IRequestHandler
+    partial class RequestGetProcessesHandler : IRequestHandler
     {
         public void Handle(SocketSession session, ePacketType reqType, object reqObj)
         {
             if (reqType == ePacketType.PACKET_GET_PROCESSES_REQUEST)
             {
                 var req = reqObj as RequestGetProcesses;
-                new Thread(() => StartGetProcesses(session, req)) {IsBackground = true}.Start();
+                new Thread(() => StartGetProcesses(session, req)) { IsBackground = true }.Start();
             }
             else if (reqType == ePacketType.PACKET_KILL_PROCESS_REQUEST)
             {
@@ -28,54 +19,32 @@ namespace RemoteControl.Client.Handlers
                 new Thread(() =>
                 {
                     StartKillProcesses(session, req);
-                    StartGetProcesses(session, new RequestGetProcesses(){IsSimpleMode = true});
+                    StartGetProcesses(session, new RequestGetProcesses() { IsSimpleMode = true });
                 }) { IsBackground = true }.Start();
             }
-        }
-
-        static void StartGetProcesses(SocketSession session, RequestGetProcesses req)
-        {
-            ResponseGetProcesses resp = new ResponseGetProcesses();
-
-            try
+            else if (reqType == ePacketType.PACKET_SUSPEND_PROCESS_REQUEST)
             {
-                List<ProcessProperty> processes = null;
-                if (req.IsSimpleMode)
+                var req = reqObj as RequestKillProcesses;
+                new Thread(() =>
                 {
-                    processes = ProcessUtil.GetProcessProperyListBySimple();
-                }
-                else
-                {
-                    processes = ProcessUtil.GetProcessProperyList();                    
-                }
-                resp.Processes = processes.OrderBy(s => s.ProcessName).ToList();
+                    SuspendProcesses(session, req);
+                }) { IsBackground = true }.Start();
             }
-            catch (Exception ex)
+            else if (reqType == ePacketType.PACKET_RESUME_PROCESS_REQUEST)
             {
-                resp.Result = false;
-                resp.Message = ex.Message;
+                var req = reqObj as RequestKillProcesses;
+                new Thread(() =>
+                {
+                    ResumeProcesses(session, req);
+                }) { IsBackground = true }.Start();
             }
-
-            session.Send(ePacketType.PACKET_GET_PROCESSES_RESPONSE, resp);
-        }
-
-        static void StartKillProcesses(SocketSession session, RequestKillProcesses req)
-        {
-            var processList = Process.GetProcesses().ToList();
-            for (int i = 0; i < req.ProcessIds.Count; i++)
+            else if (reqType == ePacketType.PACKET_SET_PROCESS_PRIORITY_REQUEST)
             {
-                string processId = req.ProcessIds[i];
-                try
+                var req = reqObj as RequestSetProcessPriority;
+                new Thread(() =>
                 {
-                    Process p = processList.Find(m => m.Id.ToString() == processId);
-                    if (p == null)
-                        continue;
-
-                    p.Kill();
-                }
-                catch (Exception)
-                {
-                }
+                    SetProcessPriority(session, req);
+                }) { IsBackground = true }.Start();
             }
         }
     }

@@ -26,5 +26,10 @@ Write-Host "Loaded: $($asm.FullName)"
 
 # Create form with proper startup path context
 $frmType = $asm.GetType("RemoteControl.Server.FrmMain")
-$frm = [Activator]::CreateInstance($frmType)
-[System.Windows.Forms.Application]::Run($frm)
+try {
+    $frm = [Activator]::CreateInstance($frmType)
+    [System.Windows.Forms.Application]::Run($frm)
+} catch {
+    Write-Host "ERROR: $($_.Exception.InnerException.Message)"
+    Write-Host "STACK: $($_.Exception.InnerException.StackTrace)"
+}

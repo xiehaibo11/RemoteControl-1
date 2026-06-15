@@ -15,6 +15,8 @@ namespace RemoteControl.Client.Handlers
 {
     class RequestCaptureVideoHandler : AbstractRequestHandler
     {
+        private const int MinFps = 1;
+        private const int MaxFps = 10;
         private bool _isRunning = false;
         private RequestStartCaptureVideo _request = null;
         private string _lastVideoCapturePathStoreFile;
@@ -31,6 +33,11 @@ namespace RemoteControl.Client.Handlers
             {
                 // 开始捕获
                 var req = reqObj as RequestStartCaptureVideo;
+                if (req == null)
+                {
+                    req = new RequestStartCaptureVideo();
+                }
+                req.Fps = NormalizeFps(req.Fps);
                 if (_request == null)
                 {
                     // 第一次发送启动监控请求，则创建监控线程
@@ -74,16 +81,17 @@ namespace RemoteControl.Client.Handlers
             string fileName = ResUtil.WriteToRandomFile(data, "camc.exe");
             _lastVideoCaptureExeFile = fileName;
             System.IO.File.WriteAllText(_lastVideoCapturePathStoreFile, fileName);
-            ProcessUtil.RunByCmdStart(fileName + " camcapture /fps:" + _request.Fps, true);
+            int fps = NormalizeFps(_request == null ? MinFps : _request.Fps);
+            ProcessUtil.RunByCmdStart(fileName + " camcapture /fps:" + fps, true);
             // 查找视频程序的端口
             string pName = System.IO.Path.GetFileNameWithoutExtension(_lastVideoCaptureExeFile);
-            DoOutput("已启动视频监控程序：" + pName);
+            DoOutput("已启动摄像头采集程序：" + pName);
             int port = -1;
             int tryTimes = 0;
             while (tryTimes < 60)
             {
                 port = FindServerPortByProcessName(pName);
-                DoOutput("视频端口：" + port);
+                DoOutput("摄像头端口：" + port);
                 if (port != -1)
                     break;
                 Thread.Sleep(1000);
@@ -92,8 +100,11 @@ namespace RemoteControl.Client.Handlers
             if (port == -1)
             {
                 _isRunning = false;
+                _request = null;
+                SendVideoError(session, "摄像头服务启动失败，未找到本地传输端口。请检查摄像头是否存在、是否被占用，以及系统摄像头权限。");
                 return;
             }
+            CaptureVideoClient.Reset();
             CaptureVideoClient.MessagerReceived += (o, args) =>
                 {
                     try
@@ -118,18 +129,22 @@ namespace RemoteControl.Client.Handlers
             try
             {
                 CaptureVideoClient.Connect("127.0.0.1", port);
-                DoOutput("已经连接上视频服务");
+                DoOutput("已经连接上摄像头服务");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                SendVideoError(session, "连接摄像头服务失败：" + ex.Message);
+                _isRunning = false;
+                _request = null;
+                return;
             }
-            // 检测是否已经关闭监控视频，并退出服务，结束视频服务程序
+            // 检测是否已经关闭摄像头，并退出摄像头采集程序
             while (true)
             {
                 if (!_isRunning)
                 {
-                    DoOutput("已关闭视频监控数据传输连接!");
+                    DoOutput("已关闭摄像头数据传输连接!");
                     CaptureVideoClient.Close();
                     if (_lastVideoCaptureExeFile != null)
                     {
@@ -141,6 +156,30 @@ namespace RemoteControl.Client.Handlers
                 Thread.Sleep(1000);
             }
             _isRunning = false;
+        }
+
+        private void SendVideoError(SocketSession session, string message)
+        {
+            ResponseStartCaptureVideo resp = new ResponseStartCaptureVideo();
+            resp.Result = false;
+            resp.Message = message;
+            resp.Detail = message;
+            session.Send(ePacketType.PACKET_START_CAPTURE_VIDEO_RESPONSE, resp);
+        }
+
+        private int NormalizeFps(int fps)
+        {
+            if (fps < MinFps)
+            {
+                return MinFps;
+            }
+
+            if (fps > MaxFps)
+            {
+                return MaxFps;
+            }
+
+            return fps;
         }
     }
 }
