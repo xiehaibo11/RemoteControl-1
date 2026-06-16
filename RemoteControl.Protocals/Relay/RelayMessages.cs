@@ -44,6 +44,16 @@ namespace RemoteControl.Protocals.Relay
         public string ClientId = "";
     }
 
+    public class RelayDataFrame
+    {
+        public string ClientId = "";
+        public string SessionId = "";
+        public string RequestId = "";
+        public int StreamId = 0;
+        public ePacketType InnerPacketType;
+        public byte[] Payload = new byte[0];
+    }
+
     /// <summary>
     /// 客户端上线通知
     /// </summary>

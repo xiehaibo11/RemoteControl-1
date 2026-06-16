@@ -94,6 +94,7 @@ namespace RemoteControl.Server
                         break;
                     }
                 }
+                SetDashboardGroup(currentSession, frm.NewName);
                 doOutput("已更改分组为: " + frm.NewName);
             }
         }

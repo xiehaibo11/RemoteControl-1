@@ -17,6 +17,34 @@ namespace RemoteControl.Server
         public string RelayServerIP = "";
         public int RelayServerPort = 10010;
 
+        // 服务器配置
+        public string ListenAddress = "0.0.0.0";
+
+        // 性能配置
+        public int WorkerLoops = 0;         // 0=自动(CPU核心数)
+        public int HeavyWorkers = 4;
+
+        // 屏幕传输
+        public int ScreenCompressionMode = 0;  // 0=JPEG+ZSTD, 1=PNG, 2=RAW
+        public int ScreenFps = 15;
+
+        // 终端字体
+        public string PreferredFont = "Sarasa Mono SC";
+
+        // 文件传输
+        public bool FileAutoSave = false;
+        public string FileDownloadDir = "";
+        public bool FileSkipLocked = true;
+        public bool FileAutoDecompress = true;
+        public int LargeFileThresholdMB = 1024;
+
+        // 审计保留
+        public int AuditRetentionDays = 30;
+
+        // 显示选项
+        public bool ShowProtocolVersion = false;
+        public bool ShowClientVersion = false;
+
         private static string BaseDir
         {
             get { return AppDomain.CurrentDomain.BaseDirectory; }

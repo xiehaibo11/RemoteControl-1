@@ -21,6 +21,16 @@ function Read-Text {
     return Get-Content -Path $Path -Encoding UTF8 -Raw
 }
 
+function Read-CombinedText {
+    param([string[]]$Paths)
+
+    $parts = @()
+    foreach ($path in $Paths) {
+        $parts += Read-Text $path
+    }
+    return ($parts -join "`n")
+}
+
 function Test-Contains {
     param(
         [string]$Text,
@@ -42,7 +52,12 @@ function New-FeatureResult {
 
     $enumText = Read-Text (Join-Path $Root "RemoteControl.Protocals\Codec\ePacketType.cs")
     $codecText = Read-Text (Join-Path $Root "RemoteControl.Protocals\Codec\CodecFactory.cs")
-    $programText = Read-Text (Join-Path $Root "RemoteControl.Client\Program.cs")
+    $programPaths = @(
+        Get-ChildItem -Path (Join-Path $Root "RemoteControl.Client") -Filter "Program*.cs" -File |
+            Sort-Object Name |
+            ForEach-Object { $_.FullName }
+    )
+    $programText = Read-CombinedText $programPaths
 
     $missingPackets = @()
     foreach ($packet in $Packets) {
@@ -176,4 +191,3 @@ $failed = @($results | Where-Object { -not $_.Passed })
 if ($failed.Count -gt 0) {
     exit 1
 }
-

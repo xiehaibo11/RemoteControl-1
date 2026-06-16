@@ -18,7 +18,7 @@ namespace RemoteControl.Client
     partial class Program
     {
         private static Socket oServer;
-        private static bool isTestMode = false;
+        private static bool isTestMode = true;
         private static bool isClosing = false;
         private static Thread heartbeatThread = null;
         private static string logFilePath = "";

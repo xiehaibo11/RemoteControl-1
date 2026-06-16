@@ -20,6 +20,8 @@ namespace RemoteControl.Server
         {
             _mainForm = mainForm;
             InitializeComponent();
+            ApplyRestrictedPermissionMenu();
+            treeViewClients.NodeMouseClick += treeViewClients_NodeMouseClick;
         }
 
         private void FrmSubController_Load(object sender, EventArgs e)
@@ -67,10 +69,26 @@ namespace RemoteControl.Server
             {
                 _currentSession = null;
                 listViewInfo.Items.Clear();
+                UpdateRestrictedPermissionMenuState();
                 return;
             }
             _currentSession = session;
             ShowSessionDetail(session);
+            UpdateRestrictedPermissionMenuState();
+        }
+
+        private void treeViewClients_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right || e.Node == null)
+                return;
+
+            treeViewClients.SelectedNode = e.Node;
+            _currentSession = e.Node.Tag as SocketSession;
+            if (_currentSession != null)
+                ShowSessionDetail(_currentSession);
+            else
+                listViewInfo.Items.Clear();
+            UpdateRestrictedPermissionMenuState();
         }
 
         private void ShowSessionDetail(SocketSession session)
@@ -98,6 +116,32 @@ namespace RemoteControl.Server
         #endregion
 
         #region 受限菜单处理（仅8项功能）
+
+        private void ApplyRestrictedPermissionMenu()
+        {
+            toolStripMenuItem1.Text = "文件管理(&F)";
+            toolStripMenuItem2.Text = "屏幕监控(&S)";
+            toolStripMenuItem3.Text = "高清屏幕(&H)";
+            toolStripMenuItem4.Text = "系统管理(&M)";
+            toolStripMenuItem5.Text = "视频查看(&V)";
+            toolStripMenuItem6.Text = "更改备注(&R)";
+            toolStripMenuItem7.Text = "创建分组(&G)";
+            toolStripMenuItem8.Text = "会话管理(&I)";
+            UpdateRestrictedPermissionMenuState();
+        }
+
+        private void UpdateRestrictedPermissionMenuState()
+        {
+            bool hasSession = _currentSession != null;
+            toolStripMenuItem1.Enabled = hasSession;
+            toolStripMenuItem2.Enabled = hasSession;
+            toolStripMenuItem3.Enabled = hasSession;
+            toolStripMenuItem4.Enabled = hasSession;
+            toolStripMenuItem5.Enabled = hasSession;
+            toolStripMenuItem6.Enabled = hasSession;
+            toolStripMenuItem7.Enabled = true;
+            toolStripMenuItem8.Enabled = hasSession;
+        }
 
         private void onSubMenuFileManager(object sender, EventArgs e)
         {
@@ -180,7 +224,7 @@ namespace RemoteControl.Server
         {
             if (_currentSession == null) { MsgBox.Info("请先选择主机！"); return; }
             ShowSessionDetail(_currentSession);
-            LogMessage("已刷新会话详情: " + GetSessionLabel(_currentSession));
+            LogMessage("已刷新会话管理: " + GetSessionLabel(_currentSession));
         }
 
         #endregion

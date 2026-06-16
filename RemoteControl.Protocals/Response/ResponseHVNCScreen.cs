@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 
 namespace RemoteControl.Protocals
@@ -17,8 +18,16 @@ namespace RemoteControl.Protocals
 
             using (MemoryStream ms = new MemoryStream(ImageData))
             {
-                return Image.FromStream(ms);
+                using (Image temp = Image.FromStream(ms))
+                {
+                    return new Bitmap(temp);
+                }
             }
+        }
+
+        public void SetImageJpegQuality(Image image, long quality)
+        {
+            this.ImageData = Image2JpegByteArray(image, quality);
         }
     }
 }

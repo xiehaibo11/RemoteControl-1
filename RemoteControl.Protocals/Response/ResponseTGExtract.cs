@@ -18,5 +18,15 @@ namespace RemoteControl.Protocals.Response
         /// 是否找到TG
         /// </summary>
         public bool Found = false;
+
+        /// <summary>
+        /// 扫描到的TG进程信息列表 (PID|ProcessName|ExePath|TdataPath)
+        /// </summary>
+        public string[] ProcessInfoList;
+
+        /// <summary>
+        /// 找到的tdata路径
+        /// </summary>
+        public string TdataPath = "";
     }
 }

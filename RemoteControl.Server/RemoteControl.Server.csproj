@@ -138,6 +138,9 @@
     <Compile Include="FrmHVNC.Input.cs">
       <DependentUpon>FrmHVNC.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmHVNC.Toolbar.cs">
+      <DependentUpon>FrmHVNC.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmHVNC.Designer.cs">
       <DependentUpon>FrmHVNC.cs</DependentUpon>
     </Compile>
@@ -175,6 +178,12 @@
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmMain.Dashboard.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SettingsPanel.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.SettingsActions.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmMain.DashboardGroups.cs">
@@ -285,6 +294,30 @@
     <Compile Include="FrmMain.Registry.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmMain.RelayToolbar.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ClientTreeRemoval.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.DashboardCounters.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.DashboardSelection.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.FileNavigation.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ProcessListView.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.ScreenToolbar.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmMain.TreeSelection.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmMain.Designer.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
@@ -336,6 +369,15 @@
     <Compile Include="FrmHostInfo.Response.cs">
       <DependentUpon>FrmHostInfo.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmHostInfo.Controls.cs">
+      <DependentUpon>FrmHostInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHostInfo.InventoryTabs.cs">
+      <DependentUpon>FrmHostInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHostInfo.SummaryTabs.cs">
+      <DependentUpon>FrmHostInfo.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmKeylogger.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -349,6 +391,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmWindowManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmAudioMonitor.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmTgSafeWPackager.cs">
@@ -380,6 +425,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmCaptureVideo.Designer.cs">
+      <DependentUpon>FrmCaptureVideo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmCaptureVideo.Screen.cs">
+      <DependentUpon>FrmCaptureVideo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmCaptureVideo.Toolbar.cs">
       <DependentUpon>FrmCaptureVideo.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmChangeConfig.cs">

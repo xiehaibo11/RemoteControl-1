@@ -126,6 +126,7 @@ namespace RemoteControl.Server
         private SocketSession CreateVirtualSession(RelayClientInfo info)
         {
             var session = new SocketSession(info.ClientId, _relaySocket);
+            session.SendHandler = SendVirtualClientPacket;
             UpdateVirtualSession(session, info);
             return session;
         }

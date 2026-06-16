@@ -24,6 +24,7 @@ namespace RemoteControl.Server
                     RSCApplication.oRemoteControlServer.Start(relayIP, relayPort);
                     this.Text = APP_TITLE;
                     SetRelayStatus(true);
+                    ScheduleClientListRefresh();
                     doOutput("已连接中转服务器");
                 }
                 catch (Exception ex)

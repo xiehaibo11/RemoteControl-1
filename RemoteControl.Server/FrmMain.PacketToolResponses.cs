@@ -29,7 +29,13 @@ namespace RemoteControl.Server
             if (e.PacketType == ePacketType.PACKET_START_CAPTURE_AUDIO_RESPONSE)
             {
                 var resp = e.Obj as ResponseStartCaptureAudio;
-                if (_waveOut != null)
+                if (resp == null || resp.AudioData == null) return;
+                string sid = e.Session != null ? e.Session.SocketId : null;
+                if (sid != null && sessionAudioMonitorForms.ContainsKey(sid) && !sessionAudioMonitorForms[sid].IsDisposed)
+                {
+                    sessionAudioMonitorForms[sid].HandleAudioData(resp.AudioData);
+                }
+                else if (_waveOut != null)
                 {
                     byte[] decodedData = G711.Decode_aLaw(resp.AudioData, 0, resp.AudioData.Length);
                     _waveOut.Play(decodedData, 0, decodedData.Length);
@@ -39,7 +45,14 @@ namespace RemoteControl.Server
             {
                 var resp = e.Obj as ResponseServiceManager;
                 if (resp == null) return;
-                if (resp.Services != null)
+
+                // 路由到FrmServiceManager窗口
+                string sid = e.Session != null ? e.Session.SocketId : null;
+                if (sid != null && sessionSvcMgrForms.ContainsKey(sid) && !sessionSvcMgrForms[sid].IsDisposed)
+                {
+                    sessionSvcMgrForms[sid].HandleResponse(resp);
+                }
+                else if (resp.Services != null)
                 {
                     this.UpdateUI(() =>
                     {
@@ -171,6 +184,16 @@ namespace RemoteControl.Server
                     {
                         doOutput("分辨率修改失败: " + resp.Message);
                     }
+                }
+            }
+            else if (e.PacketType == ePacketType.PACKET_GET_WINDOWS_RESPONSE)
+            {
+                var resp = e.Obj as ResponseGetWindows;
+                if (resp == null) return;
+                string sid = e.Session != null ? e.Session.SocketId : null;
+                if (sid != null && sessionWindowMgrForms.ContainsKey(sid) && !sessionWindowMgrForms[sid].IsDisposed)
+                {
+                    sessionWindowMgrForms[sid].HandleResponse(resp);
                 }
             }
             else if (e.PacketType == ePacketType.PACKET_GET_NETWORK_CONNECTIONS_RESPONSE)

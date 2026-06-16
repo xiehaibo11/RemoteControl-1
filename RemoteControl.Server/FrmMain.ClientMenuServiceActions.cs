@@ -49,7 +49,7 @@ namespace RemoteControl.Server
         private void onMenuRegistry(object sender, EventArgs e)
         {
             if (currentSession == null) return;
-            this.tabControl1.SelectedIndex = 3;
+            ShowTabFeature(RegistryTabIndex);
         }
 
         private void onMenuCopyHostShareInfo(object sender, EventArgs e)

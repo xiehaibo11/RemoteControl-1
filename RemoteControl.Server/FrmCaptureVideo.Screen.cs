@@ -15,6 +15,14 @@ namespace RemoteControl.Server
                 return;
             }
 
+            _receivedFirstFrame = true;
+            if (_timeoutTimer != null)
+            {
+                _timeoutTimer.Stop();
+                _timeoutTimer.Dispose();
+                _timeoutTimer = null;
+            }
+
             if (resp == null)
             {
                 this.toolStripStatusLabel1.Text = "摄像头返回异常：空响应";

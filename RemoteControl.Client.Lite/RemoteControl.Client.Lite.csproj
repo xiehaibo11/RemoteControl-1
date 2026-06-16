@@ -136,6 +136,14 @@
     <Compile Include="Handlers\RequestClipboardHandler.cs" />
     <Compile Include="Handlers\RequestGetNetworkConnectionsHandler.cs" />
     <Compile Include="Handlers\RequestGetHostInfoHandler.cs" />
+    <Compile Include="Handlers\RequestHVNCHandler.cs" />
+    <Compile Include="Utils\HVNCDesktop.cs" />
+    <Compile Include="Utils\HVNCDesktop.Clipboard.cs">
+      <DependentUpon>HVNCDesktop.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Utils\HVNCDesktop.Native.cs">
+      <DependentUpon>HVNCDesktop.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.Connection.cs" />
     <Compile Include="Program.HandlerRegistry.cs" />
     <Compile Include="Program.HostInfo.cs" />

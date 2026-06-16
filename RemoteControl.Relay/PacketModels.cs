@@ -6,6 +6,10 @@ namespace RemoteControl.Relay
     public class HandshakeData
     {
         public string Role { get; set; } = "";
+        public string ClientId { get; set; } = "";
+        public string CustomerId { get; set; } = "";
+        public string InstallId { get; set; } = "";
+        public string BuildId { get; set; } = "";
         public string HostName { get; set; } = "";
         public string AppPath { get; set; } = "";
         public string OnlineAvatar { get; set; } = "";
@@ -26,6 +30,16 @@ namespace RemoteControl.Relay
     public class SelectClientData
     {
         public string ClientId { get; set; } = "";
+    }
+
+    public class RelayDataFrameData
+    {
+        public string ClientId { get; set; } = "";
+        public string SessionId { get; set; } = "";
+        public string RequestId { get; set; } = "";
+        public int StreamId { get; set; }
+        public int InnerPacketType { get; set; }
+        public byte[] Payload { get; set; } = new byte[0];
     }
 
     public class HostNameData

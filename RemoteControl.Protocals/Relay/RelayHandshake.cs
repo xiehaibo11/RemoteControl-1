@@ -12,6 +12,11 @@ namespace RemoteControl.Protocals.Relay
         /// </summary>
         public string Role = "";
 
+        public string ClientId = "";
+        public string CustomerId = "";
+        public string InstallId = "";
+        public string BuildId = "";
+
         /// <summary>
         /// 主机名(客户端填写)
         /// </summary>

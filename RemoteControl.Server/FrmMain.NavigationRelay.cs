@@ -179,7 +179,7 @@ namespace RemoteControl.Server
             }
             catch (Exception ex)
             {
-                Logger.Debug("自动连接Relay服务器失败: " + ex);
+                Logger.Debug("自动连接Relay服务器失败", ex);
                 this.toolStripButton4.Checked = false;
                 SetRelayStatus(false);
                 doOutput("自动连接Relay服务器失败，请检查配置");

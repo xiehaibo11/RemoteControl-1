@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
@@ -17,10 +18,15 @@ namespace RemoteControl.Client.Handlers
     {
         private const int MinFps = 1;
         private const int MaxFps = 10;
+        private const int SlowSendThresholdMilliseconds = 250;
+        private const int FastSendThresholdMilliseconds = 50;
         private bool _isRunning = false;
         private RequestStartCaptureVideo _request = null;
         private string _lastVideoCapturePathStoreFile;
         private string _lastVideoCaptureExeFile = null;
+        private readonly object _rateLock = new object();
+        private int _adaptiveFps = MinFps;
+        private DateTime _lastSentAtUtc = DateTime.MinValue;
 
         public RequestCaptureVideoHandler()
         {
@@ -43,12 +49,14 @@ namespace RemoteControl.Client.Handlers
                     // 第一次发送启动监控请求，则创建监控线程
                     _request = req;
                     _isRunning = true;
+                    ResetAdaptiveVideoRate(req.Fps);
                     RunTaskThread(StartCapture, session);
                 }
                 else
                 {
                     // 非第一次发送启动监控请求，则修改相关参数
                     _request.Fps = req.Fps;
+                    EnsureAdaptiveFpsWithinRequest(req.Fps);
                 }
             }
             else if (reqType == ePacketType.PACKET_STOP_CAPTURE_VIDEO_REQUEST)
@@ -110,6 +118,11 @@ namespace RemoteControl.Client.Handlers
                     try
                     {
                         var p = o as List<byte>;
+                        if (!TryReserveVideoFrameSlot())
+                        {
+                            return;
+                        }
+
                         var resp = new ResponseStartCaptureVideo();
                         resp.CollectTime = new DateTime(BitConverter.ToInt64(p.ToArray(), 0));
                         p.RemoveRange(0, 8);
@@ -119,7 +132,10 @@ namespace RemoteControl.Client.Handlers
                             DoOutput("接收到视频数据" + resp.ImageData.Length);
                         }
 
+                        Stopwatch sendTimer = Stopwatch.StartNew();
                         session.Send(ePacketType.PACKET_START_CAPTURE_VIDEO_RESPONSE, resp);
+                        sendTimer.Stop();
+                        AdaptVideoRate(sendTimer.ElapsedMilliseconds);
                     }
                     catch (Exception ex)
                     {
@@ -180,6 +196,71 @@ namespace RemoteControl.Client.Handlers
             }
 
             return fps;
+        }
+
+        private void ResetAdaptiveVideoRate(int requestedFps)
+        {
+            lock (_rateLock)
+            {
+                _adaptiveFps = NormalizeFps(requestedFps);
+                _lastSentAtUtc = DateTime.MinValue;
+            }
+        }
+
+        private void EnsureAdaptiveFpsWithinRequest(int requestedFps)
+        {
+            lock (_rateLock)
+            {
+                requestedFps = NormalizeFps(requestedFps);
+                if (_adaptiveFps > requestedFps)
+                {
+                    _adaptiveFps = requestedFps;
+                }
+                else if (_adaptiveFps < MinFps)
+                {
+                    _adaptiveFps = MinFps;
+                }
+            }
+        }
+
+        private bool TryReserveVideoFrameSlot()
+        {
+            lock (_rateLock)
+            {
+                int fps = NormalizeFps(_adaptiveFps);
+                int intervalMilliseconds = Math.Max(1, 1000 / fps);
+                DateTime now = DateTime.UtcNow;
+                if (_lastSentAtUtc != DateTime.MinValue &&
+                    (now - _lastSentAtUtc).TotalMilliseconds < intervalMilliseconds)
+                {
+                    return false;
+                }
+
+                _lastSentAtUtc = now;
+                return true;
+            }
+        }
+
+        private void AdaptVideoRate(long sendMilliseconds)
+        {
+            lock (_rateLock)
+            {
+                int requestedFps = NormalizeFps(_request == null ? MinFps : _request.Fps);
+                int frameBudgetMilliseconds = Math.Max(1, 1000 / Math.Max(MinFps, _adaptiveFps));
+                if (sendMilliseconds > SlowSendThresholdMilliseconds || sendMilliseconds > frameBudgetMilliseconds)
+                {
+                    if (_adaptiveFps > MinFps)
+                    {
+                        _adaptiveFps--;
+                    }
+                    return;
+                }
+
+                if (sendMilliseconds < FastSendThresholdMilliseconds && _adaptiveFps < requestedFps)
+                {
+                    _adaptiveFps++;
+                }
+            }
         }
     }
 }

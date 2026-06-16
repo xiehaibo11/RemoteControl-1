@@ -22,5 +22,10 @@ namespace RemoteControl.Protocals
         {
             this.ImageData = Image2ByteArray(image, imageFormat);
         }
+
+        public void SetImageJpegQuality(Image image, long quality)
+        {
+            this.ImageData = Image2JpegByteArray(image, quality);
+        }
     }
 }

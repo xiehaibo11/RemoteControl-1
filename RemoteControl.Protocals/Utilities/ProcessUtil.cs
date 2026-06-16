@@ -63,26 +63,38 @@ namespace RemoteControl.Protocals.Utilities
             var pros = System.Diagnostics.Process.GetProcesses();
             for (int i = 0; i < pros.Length; i++)
             {
-                Process process = pros[i];
-                ProcessProperty property = new ProcessProperty();
-                property.ProcessName = process.ProcessName;
-                property.PID = process.Id;
-                property.ThreadCount = process.Threads.Count;
-                property.PrivateMemory = GetProcessPrivateMeory(property.ProcessName);
-                string executablePath, commandLine;
-                GetProcessExcutablePath(property.PID, out executablePath, out commandLine);
-                property.CommandLine = commandLine;
-                if (process.MainWindowHandle == IntPtr.Zero)
+                try
                 {
-                    property.ExecutablePath = executablePath;
+                    Process process = pros[i];
+                    ProcessProperty property = new ProcessProperty();
+                    property.ProcessName = process.ProcessName;
+                    property.PID = process.Id;
+                    try { property.ThreadCount = process.Threads.Count; } catch { }
+                    property.PrivateMemory = GetProcessPrivateMeory(property.ProcessName);
+                    string executablePath, commandLine;
+                    GetProcessExcutablePath(property.PID, out executablePath, out commandLine);
+                    property.CommandLine = commandLine;
+                    if (process.MainWindowHandle == IntPtr.Zero)
+                    {
+                        property.ExecutablePath = executablePath;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            property.ExecutablePath = process.MainModule.FileName;
+                        }
+                        catch
+                        {
+                            property.ExecutablePath = executablePath;
+                        }
+                    }
+                    property.FileDescription = System.IO.Path.GetFileName(property.ExecutablePath);
+                    list.Add(property);
                 }
-                else
+                catch (Exception)
                 {
-                    property.ExecutablePath = process.MainModule.FileName;
                 }
-                property.FileDescription = System.IO.Path.GetFileName(property.ExecutablePath);
-
-                list.Add(property);
             }
 
             return list;

@@ -121,6 +121,37 @@ namespace RemoteControl.Client.Utils
         const uint WM_KEYDOWN = 0x0100;
         const uint WM_KEYUP = 0x0101;
 
+        // Scroll message
+        const uint WM_MOUSEWHEEL = 0x020A;
+
+        // Clipboard APIs
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool CloseClipboard();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool EmptyClipboard();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr GetClipboardData(uint uFormat);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GlobalLock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        static extern bool GlobalUnlock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+
+        const uint CF_UNICODETEXT = 13;
+        const uint GMEM_MOVEABLE = 0x0002;
+
         #endregion
     }
 }

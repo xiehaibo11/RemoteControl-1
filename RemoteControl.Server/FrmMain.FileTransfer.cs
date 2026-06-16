@@ -26,13 +26,8 @@ namespace RemoteControl.Server
     {
         private void refreshClientCountShow()
         {
-            if (!string.IsNullOrEmpty(hostFilterKeyword) && this.InternetTreeNode != null)
-            {
-                this.toolStripStatusLabel1.Text = "自动上线：" + this.clientCount + "台  筛选：" + this.InternetTreeNode.Nodes.Count + "台";
-                return;
-            }
-
-            this.toolStripStatusLabel1.Text = "自动上线：" + this.clientCount + "台";
+            int port = Settings.CurrentSettings.RelayServerPort;
+            this.toolStripStatusLabel1.Text = "运行中 | 端口: " + port + " | 客户端: " + this.clientCount;
         }
 
         /// <summary>
@@ -123,8 +118,18 @@ namespace RemoteControl.Server
             string remoteFileDir = this.listView1.Tag as string;
             if (remoteFileDir == null)
             {
-                MsgBox.Info("当前目录无法上传文件!");
-                return;
+                // 在盘符根目录时，尝试使用选中项的路径
+                if (this.listView1.SelectedItems.Count > 0)
+                {
+                    var tag = this.listView1.SelectedItems[0].Tag as ListViewItemFileOrDirTag;
+                    if (tag != null && !tag.IsFile)
+                        remoteFileDir = tag.Path;
+                }
+                if (remoteFileDir == null)
+                {
+                    MsgBox.Info("请先进入一个目录或选中一个盘符!");
+                    return;
+                }
             }
 
             OpenFileDialog ofd = new OpenFileDialog();

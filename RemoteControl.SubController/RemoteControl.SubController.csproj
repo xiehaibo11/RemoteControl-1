@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>RemoteControl.SubController</RootNamespace>
+    <AssemblyName>RemoteControl.SubController</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Any CPU' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Any CPU' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Newtonsoft.Json.Lite">
+      <HintPath>..\Libs\Newtonsoft.Json.Lite.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\Libs\log4net.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="SubControllerConfig.cs" />
+    <Compile Include="SubControllerRelay.cs" />
+    <Compile Include="FrmSubMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSubMain.Designer.cs">
+      <DependentUpon>FrmSubMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSubMain.Dashboard.cs">
+      <DependentUpon>FrmSubMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSubMain.Groups.cs">
+      <DependentUpon>FrmSubMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSubMain.ContextMenu.cs">
+      <DependentUpon>FrmSubMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSubMain.ResponseDispatch.cs">
+      <DependentUpon>FrmSubMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmSubSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmScreenViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmVideoViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmFileManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmServiceManager.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RemoteControl.Protocals\RemoteControl.Protocals.csproj">
+      <Project>{506B585C-B02E-4F2B-9889-1A4AC49C8A29}</Project>
+      <Name>RemoteControl.Protocals</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

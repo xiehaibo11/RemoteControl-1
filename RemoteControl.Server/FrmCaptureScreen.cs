@@ -10,7 +10,6 @@ using RemoteControl.Protocals.Request;
 using log4net;
 using System.IO;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using System.Threading;
 using RemoteControl.Server.Utils;
 
@@ -29,11 +28,6 @@ namespace RemoteControl.Server
         private bool _isClosing = false;
 
         private const int DefaultCaptureFps = 5;
-        private const uint WDA_MONITOR = 0x00000001;
-        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
-
-        [DllImport("user32.dll")]
-        private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
 
         public FrmCaptureScreen(SocketSession session)
         {
@@ -148,7 +142,6 @@ namespace RemoteControl.Server
 
         private void FrmCaptureScreen_Load(object sender, EventArgs e)
         {
-            ApplyCaptureExclusion();
             this.toolStripMenuItemFPS15.Visible = false;
             this.toolStripMenuItemFPS60.Visible = false;
             // Panel增加滚动条
@@ -156,21 +149,6 @@ namespace RemoteControl.Server
             // 根据图像大小，自动调节控件和Image的尺寸
             this.pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
             SetupMenuStrip();
-        }
-
-        private void ApplyCaptureExclusion()
-        {
-            try
-            {
-                if (!SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE))
-                {
-                    SetWindowDisplayAffinity(this.Handle, WDA_MONITOR);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn("ApplyCaptureExclusion failed", ex);
-            }
         }
 
         private void toolStripButtonSave_Click(object sender, EventArgs e)

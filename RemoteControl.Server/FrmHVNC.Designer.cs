@@ -32,6 +32,17 @@ namespace RemoteControl.Server
             this.toolStripMenuItemFPS10 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButtonRunProcess = new System.Windows.Forms.ToolStripButton();
+            this.toolStripDropDownButtonApps = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripMenuItemLaunchChrome = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemLaunchEdge = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemLaunchCMD = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemLaunchPowerShell = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemLaunchExplorer = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripButtonClipboardGet = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButtonClipboardSet = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripLabelStatus = new System.Windows.Forms.ToolStripLabel();
             this.panel1 = new System.Windows.Forms.Panel();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.toolStrip1.SuspendLayout();
@@ -49,10 +60,16 @@ namespace RemoteControl.Server
             this.toolStripSeparator2,
             this.toolStripSplitButtonFPS,
             this.toolStripSeparator3,
-            this.toolStripButtonRunProcess});
+            this.toolStripButtonRunProcess,
+            this.toolStripDropDownButtonApps,
+            this.toolStripSeparator4,
+            this.toolStripButtonClipboardGet,
+            this.toolStripButtonClipboardSet,
+            this.toolStripSeparator5,
+            this.toolStripLabelStatus});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(900, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1000, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // toolStripButtonStart
@@ -164,6 +181,84 @@ namespace RemoteControl.Server
             this.toolStripButtonRunProcess.Text = "启动程序";
             this.toolStripButtonRunProcess.Click += new System.EventHandler(this.toolStripButtonRunProcess_Click);
             // 
+            // toolStripDropDownButtonApps
+            // 
+            this.toolStripDropDownButtonApps.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripDropDownButtonApps.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItemLaunchChrome,
+            this.toolStripMenuItemLaunchEdge,
+            this.toolStripMenuItemLaunchCMD,
+            this.toolStripMenuItemLaunchPowerShell,
+            this.toolStripMenuItemLaunchExplorer});
+            this.toolStripDropDownButtonApps.Name = "toolStripDropDownButtonApps";
+            this.toolStripDropDownButtonApps.Size = new System.Drawing.Size(72, 22);
+            this.toolStripDropDownButtonApps.Text = "快速启动";
+            // 
+            // toolStripMenuItemLaunchChrome
+            // 
+            this.toolStripMenuItemLaunchChrome.Name = "toolStripMenuItemLaunchChrome";
+            this.toolStripMenuItemLaunchChrome.Size = new System.Drawing.Size(140, 22);
+            this.toolStripMenuItemLaunchChrome.Text = "Chrome";
+            this.toolStripMenuItemLaunchChrome.Click += new System.EventHandler(this.toolStripMenuItemLaunchChrome_Click);
+            // 
+            // toolStripMenuItemLaunchEdge
+            // 
+            this.toolStripMenuItemLaunchEdge.Name = "toolStripMenuItemLaunchEdge";
+            this.toolStripMenuItemLaunchEdge.Size = new System.Drawing.Size(140, 22);
+            this.toolStripMenuItemLaunchEdge.Text = "Edge";
+            this.toolStripMenuItemLaunchEdge.Click += new System.EventHandler(this.toolStripMenuItemLaunchEdge_Click);
+            // 
+            // toolStripMenuItemLaunchCMD
+            // 
+            this.toolStripMenuItemLaunchCMD.Name = "toolStripMenuItemLaunchCMD";
+            this.toolStripMenuItemLaunchCMD.Size = new System.Drawing.Size(140, 22);
+            this.toolStripMenuItemLaunchCMD.Text = "CMD";
+            this.toolStripMenuItemLaunchCMD.Click += new System.EventHandler(this.toolStripMenuItemLaunchCMD_Click);
+            // 
+            // toolStripMenuItemLaunchPowerShell
+            // 
+            this.toolStripMenuItemLaunchPowerShell.Name = "toolStripMenuItemLaunchPowerShell";
+            this.toolStripMenuItemLaunchPowerShell.Size = new System.Drawing.Size(140, 22);
+            this.toolStripMenuItemLaunchPowerShell.Text = "PowerShell";
+            this.toolStripMenuItemLaunchPowerShell.Click += new System.EventHandler(this.toolStripMenuItemLaunchPowerShell_Click);
+            // 
+            // toolStripMenuItemLaunchExplorer
+            // 
+            this.toolStripMenuItemLaunchExplorer.Name = "toolStripMenuItemLaunchExplorer";
+            this.toolStripMenuItemLaunchExplorer.Size = new System.Drawing.Size(140, 22);
+            this.toolStripMenuItemLaunchExplorer.Text = "Explorer";
+            this.toolStripMenuItemLaunchExplorer.Click += new System.EventHandler(this.toolStripMenuItemLaunchExplorer_Click);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripButtonClipboardGet
+            // 
+            this.toolStripButtonClipboardGet.Name = "toolStripButtonClipboardGet";
+            this.toolStripButtonClipboardGet.Size = new System.Drawing.Size(84, 22);
+            this.toolStripButtonClipboardGet.Text = "获取剪贴板";
+            this.toolStripButtonClipboardGet.Click += new System.EventHandler(this.toolStripButtonClipboardGet_Click);
+            // 
+            // toolStripButtonClipboardSet
+            // 
+            this.toolStripButtonClipboardSet.Name = "toolStripButtonClipboardSet";
+            this.toolStripButtonClipboardSet.Size = new System.Drawing.Size(84, 22);
+            this.toolStripButtonClipboardSet.Text = "发送剪贴板";
+            this.toolStripButtonClipboardSet.Click += new System.EventHandler(this.toolStripButtonClipboardSet_Click);
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripLabelStatus
+            // 
+            this.toolStripLabelStatus.Name = "toolStripLabelStatus";
+            this.toolStripLabelStatus.Size = new System.Drawing.Size(32, 22);
+            this.toolStripLabelStatus.Text = "就绪";
+            // 
             // panel1
             // 
             this.panel1.AutoScroll = true;
@@ -171,7 +266,7 @@ namespace RemoteControl.Server
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 25);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(900, 575);
+            this.panel1.Size = new System.Drawing.Size(1000, 575);
             this.panel1.TabIndex = 1;
             // 
             // pictureBox1
@@ -186,17 +281,18 @@ namespace RemoteControl.Server
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
+            this.pictureBox1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseWheel);
             // 
             // FrmHVNC
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(900, 600);
+            this.ClientSize = new System.Drawing.Size(1000, 600);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.toolStrip1);
             this.KeyPreview = true;
             this.Name = "FrmHVNC";
-            this.Text = "HVNC \u9690\u5f62\u684c\u9762";
+            this.Text = "HVNC 隐形桌面";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmHVNC_FormClosing);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FrmHVNC_KeyDown);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FrmHVNC_KeyUp);
@@ -226,6 +322,17 @@ namespace RemoteControl.Server
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemFPS10;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripButton toolStripButtonRunProcess;
+        private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButtonApps;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLaunchChrome;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLaunchEdge;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLaunchCMD;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLaunchPowerShell;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLaunchExplorer;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripButton toolStripButtonClipboardGet;
+        private System.Windows.Forms.ToolStripButton toolStripButtonClipboardSet;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripLabel toolStripLabelStatus;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.PictureBox pictureBox1;
     }

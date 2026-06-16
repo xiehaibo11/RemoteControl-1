@@ -9,13 +9,16 @@ namespace RemoteControl.Server
         private void hostListView_MouseUp(object sender, MouseEventArgs e)
         {
             ListViewHitTestInfo hit = hostListView.HitTest(e.Location);
+            SocketSession session = null;
             if (hit.Item != null)
             {
                 hit.Item.Selected = true;
-                SelectDashboardSession(hit.Item.Tag as SocketSession);
+                session = hit.Item.Tag as SocketSession;
+                SelectDashboardSession(session);
             }
+
             if (e.Button == MouseButtons.Right && contextMenuStripClient != null)
-                contextMenuStripClient.Show(hostListView, e.Location);
+                ShowClientContextMenu(hostListView, e.Location, session);
         }
 
         private void hostListView_DoubleClick(object sender, EventArgs e)

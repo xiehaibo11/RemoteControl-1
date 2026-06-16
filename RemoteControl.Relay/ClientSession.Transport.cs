@@ -130,21 +130,49 @@ namespace RemoteControl.Relay
             await _sendSemaphore.WaitAsync();
             try
             {
-                int sent = 0;
-                while (sent < packet.Length)
-                {
-                    int s = await _socket.SendAsync(
-                        new ArraySegment<byte>(packet, sent, packet.Length - sent),
-                        SocketFlags.None);
-                    if (s <= 0)
-                        break;
-                    sent += s;
-                }
+                await SendRawLockedAsync(packet);
             }
             catch { }
             finally
             {
                 _sendSemaphore.Release();
+            }
+        }
+
+        public async Task<bool> TrySendRawAsync(byte[] packet)
+        {
+            if (packet == null || packet.Length == 0)
+                return false;
+
+            if (!_sendSemaphore.Wait(0))
+                return false;
+
+            try
+            {
+                await SendRawLockedAsync(packet);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                _sendSemaphore.Release();
+            }
+        }
+
+        private async Task SendRawLockedAsync(byte[] packet)
+        {
+            int sent = 0;
+            while (sent < packet.Length)
+            {
+                int s = await _socket.SendAsync(
+                    new ArraySegment<byte>(packet, sent, packet.Length - sent),
+                    SocketFlags.None);
+                if (s <= 0)
+                    break;
+                sent += s;
             }
         }
 

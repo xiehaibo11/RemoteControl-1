@@ -15,6 +15,10 @@ namespace RemoteControl.Relay
         private volatile bool _closed;
 
         public string SessionId { get; private set; }
+        public string ClientId { get; set; }
+        public string CustomerId { get; set; } = "";
+        public string InstallId { get; set; } = "";
+        public string BuildId { get; set; } = "";
         public string Role { get; set; } = "";
         public string HostName { get; set; } = "";
         public string AppPath { get; set; } = "";
@@ -56,6 +60,7 @@ namespace RemoteControl.Relay
         {
             _socket = socket;
             SessionId = Guid.NewGuid().ToString("N").Substring(0, 16);
+            ClientId = SessionId;
             RemoteEndPoint = socket.RemoteEndPoint?.ToString() ?? "unknown";
             LastSeenUtc = DateTime.UtcNow;
         }

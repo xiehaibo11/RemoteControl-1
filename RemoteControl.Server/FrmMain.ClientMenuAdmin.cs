@@ -107,7 +107,7 @@ namespace RemoteControl.Server
         private void onMenuFindProcess(object sender, EventArgs e)
         {
             if (currentSession == null) return;
-            this.tabControl1.SelectedIndex = 4;
+            ShowTabFeature(ProcessManagerTabIndex);
             currentSession.Send(ePacketType.PACKET_GET_PROCESSES_REQUEST, new RequestGetProcesses());
         }
 
@@ -119,7 +119,7 @@ namespace RemoteControl.Server
             if (frm.ShowDialog() != DialogResult.OK || string.IsNullOrWhiteSpace(frm.InputText))
                 return;
 
-            this.tabControl1.SelectedIndex = 2;
+            ShowTabFeature(RemoteCommandTabIndex);
             RequestFindWindow req = new RequestFindWindow();
             req.Keyword = frm.InputText.Trim();
             currentSession.Send(ePacketType.PACKET_FIND_WINDOW_REQUEST, req);
@@ -138,7 +138,7 @@ namespace RemoteControl.Server
 
         private void onMenuShowCustomerCoverage(object sender, EventArgs e)
         {
-            this.tabControl1.SelectedIndex = 2;
+            ShowTabFeature(RemoteCommandTabIndex);
             this.textBoxCommandResponse.AppendText("=== 客户需求覆盖报告 ===\r\n");
             this.textBoxCommandResponse.AppendText("[已接入] 主机功能、文件管理、主机分享、打开网址、远程聊天、查找窗口、筛选主机、会话菜单、日志/浏览器菜单。\r\n");
             this.textBoxCommandResponse.AppendText("[只读/本地] 更改备注、更改分组、筛选主机、复制/导出信息。\r\n");

@@ -9,8 +9,12 @@ using RemoteControl.Protocals.Codec;
 
 namespace RemoteControl.Protocals
 {
+    public delegate void SocketSessionSendHandler(SocketSession session, ePacketType packetType, object obj);
+
     public class SocketSession
     {
+        private readonly object _sendLock = new object();
+
         public Socket SocketObj { get; private set; }
         public string SocketId { get; private set; }
         public string HostName { get; private set; }
@@ -32,6 +36,7 @@ namespace RemoteControl.Protocals
         public string Location { get; private set; }
         public string Remark { get; private set; }
         public DateTime LastActiveTime { get; private set; }
+        public SocketSessionSendHandler SendHandler { get; set; }
 
         public SocketSession(string sId, Socket oSocket)
         {
@@ -153,11 +158,35 @@ namespace RemoteControl.Protocals
         {
             try
             {
-                this.SocketObj.Send(CodecFactory.Instance.EncodeOject(packetType, obj));
+                if (this.SendHandler != null)
+                {
+                    this.SendHandler(this, packetType, obj);
+                    return;
+                }
+
+                SendRaw(CodecFactory.Instance.EncodeOject(packetType, obj));
             }
             catch (Exception ex)
             {
                 Console.WriteLine("SocketSession Error:" + ex.Message);
+            }
+        }
+
+        private void SendRaw(byte[] packet)
+        {
+            if (packet == null || packet.Length == 0 || this.SocketObj == null)
+                return;
+
+            lock (_sendLock)
+            {
+                int sent = 0;
+                while (sent < packet.Length)
+                {
+                    int size = this.SocketObj.Send(packet, sent, packet.Length - sent, SocketFlags.None);
+                    if (size <= 0)
+                        break;
+                    sent += size;
+                }
             }
         }
     }

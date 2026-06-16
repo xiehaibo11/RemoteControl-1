@@ -11,6 +11,7 @@ namespace RemoteControl.Protocals
         public eMouseButtons MouseButton;
         public eMouseOperations MouseOperation;
         public Point MouseLocation;
+        public int ScrollDelta;
     }
 
     public enum eMouseButtons
@@ -29,6 +30,7 @@ namespace RemoteControl.Protocals
         MouseUp,
         MousePress,
         MouseDoubleClick,
-        MouseMove
+        MouseMove,
+        MouseScroll
     }
 }

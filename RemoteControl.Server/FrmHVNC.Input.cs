@@ -55,6 +55,19 @@ namespace RemoteControl.Server
             }
         }
 
+        private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (_isCaptureMouse)
+            {
+                RequestMouseEvent req = new RequestMouseEvent();
+                req.MouseButton = eMouseButtons.None;
+                req.MouseOperation = eMouseOperations.MouseScroll;
+                req.MouseLocation = e.Location;
+                req.ScrollDelta = e.Delta;
+                oSession.Send(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, req);
+            }
+        }
+
         #endregion
 
         #region Keyboard events

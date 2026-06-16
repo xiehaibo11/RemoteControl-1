@@ -8,6 +8,10 @@ namespace RemoteControl.Relay
         private async Task HandleClientConnectionAsync(ClientSession session, HandshakeData handshake)
         {
             session.Role = "client";
+            session.ClientId = string.IsNullOrEmpty(handshake.ClientId) ? session.SessionId : handshake.ClientId;
+            session.CustomerId = handshake.CustomerId;
+            session.InstallId = handshake.InstallId;
+            session.BuildId = handshake.BuildId;
             session.HostName = handshake.HostName;
             session.OnlineAvatar = handshake.OnlineAvatar;
             session.AppPath = handshake.AppPath;
@@ -25,7 +29,7 @@ namespace RemoteControl.Relay
             session.ISP = handshake.ISP;
             session.OnlineTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-            string clientId = session.SessionId;
+            string clientId = session.ClientId;
             _clients[clientId] = session;
             LogScale("[online] clients=", _clients.Count, session.HostName + " ID=" + clientId);
             await NotifyControllersClientOnlineAsync(session);
@@ -43,7 +47,13 @@ namespace RemoteControl.Relay
 
                     ClientSession controller = session.BoundController;
                     if (controller != null && controller.IsConnected)
-                        await controller.SendRawAsync(packet);
+                    {
+                        byte[] relayPacket = PacketCodec.BuildRelayDataFrame(clientId, packet);
+                        if (PacketCodec.IsDroppableRealtimePacket(packet))
+                            await controller.TrySendRawAsync(relayPacket);
+                        else
+                            await controller.SendRawAsync(relayPacket);
+                    }
                 }
             }
             catch { }

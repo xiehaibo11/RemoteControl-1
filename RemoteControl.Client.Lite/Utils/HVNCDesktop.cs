@@ -205,5 +205,59 @@ namespace RemoteControl.Client.Utils
                 _disposed = true;
             }
         }
+
+        /// <summary>
+        /// 获取虚拟桌面实际分辨率
+        /// </summary>
+        public void GetScreenResolution(out int width, out int height)
+        {
+            IntPtr originalDesktop = GetThreadDesktop(GetCurrentThreadId());
+            if (!SetThreadDesktop(_hDesktop))
+            {
+                width = 1920;
+                height = 1080;
+                return;
+            }
+            try
+            {
+                width = GetSystemMetrics(SM_CXSCREEN);
+                height = GetSystemMetrics(SM_CYSCREEN);
+                if (width == 0 || height == 0)
+                {
+                    width = 1920;
+                    height = 1080;
+                }
+            }
+            finally
+            {
+                SetThreadDesktop(originalDesktop);
+            }
+        }
+
+        /// <summary>
+        /// 向隐藏桌面注入滚轮事件
+        /// </summary>
+        public void InjectScrollEvent(int x, int y, int delta)
+        {
+            IntPtr originalDesktop = GetThreadDesktop(GetCurrentThreadId());
+            if (!SetThreadDesktop(_hDesktop))
+                return;
+
+            try
+            {
+                IntPtr hWnd = FindWindowAtPoint(x, y);
+                if (hWnd == IntPtr.Zero) return;
+
+                // WM_MOUSEWHEEL: wParam = delta << 16, lParam = screen coords
+                IntPtr wParam = (IntPtr)(delta << 16);
+                IntPtr lParam = (IntPtr)((y << 16) | (x & 0xFFFF));
+                PostMessage(hWnd, WM_MOUSEWHEEL, wParam, lParam);
+            }
+            finally
+            {
+                SetThreadDesktop(originalDesktop);
+            }
+        }
+
     }
 }

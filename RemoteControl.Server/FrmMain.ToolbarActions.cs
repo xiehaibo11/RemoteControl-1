@@ -31,17 +31,16 @@ namespace RemoteControl.Server
                 MsgBox.Info("请先选择客户端！");
                 return;
             }
+            // 确保 Relay 绑定指向当前客户端
+            if (RSCApplication.oRemoteControlServer != null)
+                RSCApplication.oRemoteControlServer.SelectClient(this.currentSession.SocketId);
+            // 清理字典中已关闭窗体的stale条目，防止fallback失效
+            CleanupStaleVideoHandlers();
             var frm = new FrmCaptureVideo(this.currentSession);
             string sessionId = this.currentSession.SocketId;
-            if (!this.sessionVideoHandlers.ContainsKey(sessionId))
-            {
-                this.sessionVideoHandlers.Add(sessionId, frm.HandleScreen);
-            }
-            else
-            {
-                this.sessionVideoHandlers[sessionId] = frm.HandleScreen;
-            }
-            frm.Show();;
+            this.sessionVideoHandlers[sessionId] = frm.HandleScreen;
+            frm.FormClosed += (s, e2) => this.sessionVideoHandlers.Remove(sessionId);
+            frm.Show();
         }
 
         private void toolStripButtonSettings_Click(object sender, EventArgs e)
@@ -79,20 +78,16 @@ namespace RemoteControl.Server
             if (e.Button != System.Windows.Forms.MouseButtons.Right)
                 return;
 
+            SocketSession client = null;
             TreeViewHitTestInfo ti = treeView1.HitTest(e.Location);
-            if (ti != null && 
-                ti.Node != null &&
-                ti.Node.Level == 1)
+            if (ti != null && ti.Node != null)
             {
-                SocketSession client = ti.Node.Tag as SocketSession;
+                client = ti.Node.Tag as SocketSession;
                 if (client != null)
-                {
                     this.treeView1.SelectedNode = ti.Node;
-                    this.currentSession = client;
-                    RSCApplication.oRemoteControlServer.SelectClient(client.SocketId);
-                    contextMenuStripClient.Show(this.treeView1, e.Location);
-                }
             }
+
+            ShowClientContextMenu(this.treeView1, e.Location, client);
         }
 
         private void 退出XToolStripMenuItem_Click(object sender, EventArgs e)

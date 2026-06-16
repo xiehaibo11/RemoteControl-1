@@ -14,6 +14,11 @@ namespace RemoteControl.Server
                 MsgBox.Info("请先选择客户端！");
                 return;
             }
+
+            // 确保 Relay 绑定指向当前客户端
+            if (RSCApplication.oRemoteControlServer != null)
+                RSCApplication.oRemoteControlServer.SelectClient(this.currentSession.SocketId);
+
             var frm = new FrmCaptureScreen(this.currentSession);
             string sessionId = this.currentSession.SocketId;
             if (!this.sessionScreenHandlers.ContainsKey(sessionId))

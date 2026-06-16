@@ -34,8 +34,14 @@ namespace RemoteControl.Server
                     internetNode.Nodes.RemoveAt(i);
                 }
             }
-            this.currentSession = null;
-            UpdateSelectedClientInfo(null);
+            // 仅当下线的客户端是当前选中客户端时才清空
+            if (this.currentSession != null && this.currentSession.SocketId == oClient.SocketId)
+            {
+                this.currentSession = null;
+                UpdateSelectedClientInfo(null);
+            }
+            RemoveHostDashboardClient(oClient);
+            RemoveDashboardGroup(oClient);
             this.clientCount = this.onlineClientSessions.Count;
             refreshClientCountShow();
             doOutput((oClient.HostName ?? oClient.SocketId) + " 下线了！");

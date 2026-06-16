@@ -29,7 +29,8 @@ namespace RemoteControl.Client
         private static Socket oServer;
         private static SocketSession oServerSession;
         private static ClientParameters clientParameters;
-        private static bool isTestMode = false;
+        private static bool isTestMode = true;
+        private static bool labMode = false;
         private static bool isClosing = false;
         private static Thread heartbeatThread = null;
         private static Dictionary<ePacketType, IRequestHandler> handlers = new Dictionary<ePacketType, IRequestHandler>();
@@ -54,6 +55,7 @@ namespace RemoteControl.Client
                     args = new string[] { };
                 }
 
+                args = ParseStartupOptions(args);
                 ReadParameters();
                 if (!ValidateClientParameters())
                 {
@@ -78,24 +80,46 @@ namespace RemoteControl.Client
         static void RunClient()
         {
             // 自动安装到持久化目录
-            if (EnsureInstalled())
+            if (!labMode && EnsureInstalled())
                 return; // 已从安装目录重新启动，当前进程退出
 
-            if (CommonUtil.IsMultiRun(MutexName))
+            string mutexName = labMode ? MutexName + ".Lab" : MutexName;
+            if (CommonUtil.IsMultiRun(mutexName))
             {
                 DoOutput("客户端已在运行，本次启动退出。");
                 return;
             }
 
-            EnsureAutoStart();
+            if (!labMode)
+                EnsureAutoStart();
+            else
+                DoOutput("Lab mode enabled: install, autostart, and persistence guard are skipped.");
             InitHandlers();
             StartConnect();
             heartbeatThread = new Thread(() => StartHeartbeat()) { IsBackground = true };
             heartbeatThread.Start();
 
             // 启动持久化守护线程
-            new Thread(PersistenceGuard) { IsBackground = true }.Start();
+            if (!labMode)
+                new Thread(PersistenceGuard) { IsBackground = true }.Start();
             StartMonitor();
+        }
+
+        static string[] ParseStartupOptions(string[] args)
+        {
+            List<string> filtered = new List<string>();
+            foreach (string arg in args)
+            {
+                if (string.Equals(arg, "/lab", StringComparison.OrdinalIgnoreCase))
+                {
+                    labMode = true;
+                    continue;
+                }
+
+                filtered.Add(arg);
+            }
+
+            return filtered.ToArray();
         }
 
 

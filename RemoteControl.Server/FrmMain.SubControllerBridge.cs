@@ -18,8 +18,7 @@ namespace RemoteControl.Server
                 return;
 
             SelectSessionFromSubController(session);
-            if (this.tabControl1 != null && this.tabControl1.TabPages.Count > 0)
-                this.tabControl1.SelectedIndex = 0;
+            ShowTabFeature(FileManagerTabIndex);
             RequestDriveList(session);
         }
 
