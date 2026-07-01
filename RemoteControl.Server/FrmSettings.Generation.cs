@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
 using RemoteControl.Protocals;
 using RemoteControl.Server.Utils;
@@ -32,10 +34,8 @@ namespace RemoteControl.Server
             if (!SaveSettingsFromForm(true))
                 return;
 
-            string datFilePath = System.IO.Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "RemoteControl.Client.dat");
-            if (!System.IO.File.Exists(datFilePath))
+            string datFilePath = ResolveClientTemplatePath();
+            if (string.IsNullOrEmpty(datFilePath))
             {
                 MsgBox.Info("RemoteControl.Client.dat文件丢失！");
                 return;
@@ -87,6 +87,44 @@ namespace RemoteControl.Server
         {
             if (!settingsLoaded)
                 FrmSettings_Load(this, EventArgs.Empty);
+        }
+
+        private static string ResolveClientTemplatePath()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string repoRoot = FindRepositoryRoot(baseDir);
+            List<string> candidates = new List<string>();
+
+            candidates.Add(Path.Combine(baseDir, "RemoteControl.Client.dat"));
+
+            if (!string.IsNullOrEmpty(repoRoot))
+            {
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Client", "bin", "x86", "Debug", "RemoteControl.Client.dat"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Client", "bin", "Debug", "RemoteControl.Client.dat"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Client", "bin", "x86", "Release", "RemoteControl.Client.dat"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Client", "bin", "Release", "RemoteControl.Client.dat"));
+            }
+
+            foreach (string candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        private static string FindRepositoryRoot(string startPath)
+        {
+            DirectoryInfo dir = new DirectoryInfo(startPath);
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "RemoteControl.sln")))
+                    return dir.FullName;
+                dir = dir.Parent;
+            }
+
+            return null;
         }
 
         private bool SaveSettingsFromForm(bool showMessage)

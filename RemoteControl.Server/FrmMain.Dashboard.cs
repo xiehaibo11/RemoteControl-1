@@ -17,6 +17,7 @@ namespace RemoteControl.Server
         private Button dashboardPluginTab;
         private readonly Dictionary<string, Button> dashboardGroupTabs = new Dictionary<string, Button>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> dashboardSessionGroups = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> dashboardKnownGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private string activeDashboardGroup = DefaultDashboardGroupName;
         private const int FileManagerTabIndex = 0;
         private const int RemoteCommandTabIndex = 1;
@@ -116,6 +117,7 @@ namespace RemoteControl.Server
             dashboardDefaultTab = CreateDashboardTab("默认(0)", delegate { SelectDashboardGroup(DefaultDashboardGroupName); });
             dashboardDefaultTab.Tag = DefaultDashboardGroupName;
             dashboardTabsPanel.Controls.Add(dashboardDefaultTab);
+            dashboardTabsPanel.Controls.Add(CreateDashboardTab("添加分组", delegate { AddDashboardGroupFromPrompt(); }));
             dashboardTabsPanel.Controls.Add(CreateDashboardTab("设置", delegate { ShowSettingsPanel(); }));
             dashboardPluginTab = CreateDashboardTab("插件", delegate { ShowPluginDashboardNotice(); });
             dashboardTabsPanel.Controls.Add(dashboardPluginTab);

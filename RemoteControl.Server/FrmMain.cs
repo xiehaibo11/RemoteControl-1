@@ -54,6 +54,7 @@ namespace RemoteControl.Server
         private Label topRelayStatusLabel;
         private Label topClientInfoLabel;
         private Button topRelayButton;
+        private NotifyIcon onlineNotifyIcon;
 
         public FrmMain()
         {
@@ -72,6 +73,7 @@ namespace RemoteControl.Server
             initSkinMenus();
             initIcons();
             initServerEvents();
+            InitializeOnlineNotifyIcon();
             BuildTopNavigationUI();
             InitializeHostDashboardLayout();
             AutoConnectRelay();
@@ -89,6 +91,44 @@ namespace RemoteControl.Server
             if (MsgBox.Question("确定要退出远程控制程序?", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
             {
                 e.Cancel = true;
+                return;
+            }
+
+            if (onlineNotifyIcon != null)
+            {
+                onlineNotifyIcon.Visible = false;
+                onlineNotifyIcon.Dispose();
+                onlineNotifyIcon = null;
+            }
+        }
+
+        private void InitializeOnlineNotifyIcon()
+        {
+            if (onlineNotifyIcon != null)
+                return;
+
+            onlineNotifyIcon = new NotifyIcon();
+            onlineNotifyIcon.Icon = this.Icon == null ? SystemIcons.Information : this.Icon;
+            onlineNotifyIcon.Text = APP_TITLE;
+            onlineNotifyIcon.Visible = true;
+        }
+
+        private void ShowClientOnlineNotification(SocketSession session)
+        {
+            if (session == null)
+                return;
+
+            try
+            {
+                InitializeOnlineNotifyIcon();
+                onlineNotifyIcon.ShowBalloonTip(
+                    3000,
+                    "主机上线",
+                    GetClientDisplayText(session) + " 已上线",
+                    ToolTipIcon.Info);
+            }
+            catch
+            {
             }
         }
     }

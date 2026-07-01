@@ -79,24 +79,57 @@ namespace RemoteControl.Server
         // ---- 更改分组 ----
         private void onMenuChangeGroup(object sender, EventArgs e)
         {
-            if (currentSession == null) return;
+            List<SocketSession> selectedSessions = GetSelectedDashboardSessions();
+            if (selectedSessions.Count == 0 && currentSession != null)
+                selectedSessions.Add(currentSession);
+            if (selectedSessions.Count == 0) return;
+
             FrmRename frm = new FrmRename("");
             frm.Text = "更改分组";
             if (frm.ShowDialog() == DialogResult.OK)
             {
+                string groupName = NormalizeDashboardGroupName(frm.NewName);
+                AddDashboardGroup(groupName, false);
+
                 // 更新树节点分组标签
-                foreach (TreeNode node in InternetTreeNode.Nodes)
+                foreach (SocketSession targetSession in selectedSessions)
                 {
-                    var session = node.Tag as SocketSession;
-                    if (session != null && session.SocketId == currentSession.SocketId)
+                    foreach (TreeNode node in InternetTreeNode.Nodes)
                     {
-                        node.ToolTipText = "分组: " + frm.NewName;
-                        break;
+                        var session = node.Tag as SocketSession;
+                        if (session != null && session.SocketId == targetSession.SocketId)
+                        {
+                            node.ToolTipText = "分组: " + groupName;
+                            break;
+                        }
                     }
+                    SetDashboardGroup(targetSession, groupName);
                 }
-                SetDashboardGroup(currentSession, frm.NewName);
-                doOutput("已更改分组为: " + frm.NewName);
+
+                SelectDashboardGroup(groupName);
+                doOutput("已将 " + selectedSessions.Count + " 台主机更改分组为: " + groupName);
             }
+        }
+
+        private List<SocketSession> GetSelectedDashboardSessions()
+        {
+            List<SocketSession> sessions = new List<SocketSession>();
+            HashSet<string> ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (hostListView == null)
+                return sessions;
+
+            foreach (ListViewItem item in hostListView.SelectedItems)
+            {
+                SocketSession session = item.Tag as SocketSession;
+                if (session == null || string.IsNullOrEmpty(session.SocketId))
+                    continue;
+
+                if (ids.Add(session.SocketId))
+                    sessions.Add(session);
+            }
+
+            return sessions;
         }
 
         private void onMenuFilterHosts(object sender, EventArgs e)

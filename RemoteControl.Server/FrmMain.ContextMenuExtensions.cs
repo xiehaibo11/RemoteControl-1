@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 
@@ -60,19 +61,10 @@ namespace RemoteControl.Server
 
         private void onMenuGenerateSubController(object sender, EventArgs e)
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string subExe = Path.Combine(baseDir, "RemoteControl.SubController.exe");
-            string subProtocals = Path.Combine(baseDir, "RemoteControl.Protocals.dll");
-
-            // Check if SubController files exist in current directory
-            if (!File.Exists(subExe))
-            {
-                // Try the build output directory
-                string slnDir = Path.GetDirectoryName(Path.GetDirectoryName(baseDir.TrimEnd('\\')));
-                string buildDir = Path.Combine(slnDir, "RemoteControl.SubController", "bin", "Debug");
-                subExe = Path.Combine(buildDir, "RemoteControl.SubController.exe");
-                subProtocals = Path.Combine(buildDir, "RemoteControl.Protocals.dll");
-            }
+            string sourceDir = ResolveSubControllerOutputDir();
+            string subExe = string.IsNullOrEmpty(sourceDir)
+                ? string.Empty
+                : Path.Combine(sourceDir, "RemoteControl.SubController.exe");
 
             if (!File.Exists(subExe))
             {
@@ -93,10 +85,13 @@ namespace RemoteControl.Server
                 {
                     // Copy SubController exe and dependencies
                     File.Copy(subExe, Path.Combine(outDir, "RemoteControl.SubController.exe"), true);
-                    CopyIfExists(subProtocals, Path.Combine(outDir, "RemoteControl.Protocals.dll"));
-                    CopyIfExists(Path.Combine(Path.GetDirectoryName(subExe), "Newtonsoft.Json.Lite.dll"),
+                    CopyIfExists(Path.Combine(sourceDir, "RemoteControl.SubController.exe.config"),
+                        Path.Combine(outDir, "RemoteControl.SubController.exe.config"));
+                    CopyIfExists(Path.Combine(sourceDir, "RemoteControl.Protocals.dll"),
+                        Path.Combine(outDir, "RemoteControl.Protocals.dll"));
+                    CopyIfExists(Path.Combine(sourceDir, "Newtonsoft.Json.Lite.dll"),
                         Path.Combine(outDir, "Newtonsoft.Json.Lite.dll"));
-                    CopyIfExists(Path.Combine(Path.GetDirectoryName(subExe), "log4net.dll"),
+                    CopyIfExists(Path.Combine(sourceDir, "log4net.dll"),
                         Path.Combine(outDir, "log4net.dll"));
 
                     MessageBox.Show("副控端已生成到：\n" + outDir
@@ -115,6 +110,46 @@ namespace RemoteControl.Server
         {
             if (File.Exists(src))
                 File.Copy(src, dest, true);
+        }
+
+        private static string ResolveSubControllerOutputDir()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string repoRoot = FindRepositoryRootForSubController(baseDir);
+            List<string> candidates = new List<string>();
+
+            candidates.Add(baseDir);
+
+            if (!string.IsNullOrEmpty(repoRoot))
+            {
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.SubController", "bin", "Debug"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.SubController", "bin", "x86", "Debug"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.SubController", "bin", "Release"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.SubController", "bin", "x86", "Release"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Server", "bin", "Debug"));
+                candidates.Add(Path.Combine(repoRoot, "RemoteControl.Server", "bin", "x86", "Debug"));
+            }
+
+            foreach (string candidate in candidates)
+            {
+                if (File.Exists(Path.Combine(candidate, "RemoteControl.SubController.exe")))
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        private static string FindRepositoryRootForSubController(string startPath)
+        {
+            DirectoryInfo dir = new DirectoryInfo(startPath);
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "RemoteControl.sln")))
+                    return dir.FullName;
+                dir = dir.Parent;
+            }
+
+            return null;
         }
 
         private void onMenuOnlineLogViewer(object sender, EventArgs e)

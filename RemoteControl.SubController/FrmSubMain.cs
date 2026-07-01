@@ -9,6 +9,7 @@ namespace RemoteControl.SubController
     {
         internal SubControllerRelay Relay { get; private set; }
         private SocketSession _currentSession;
+        private NotifyIcon onlineNotifyIcon;
 
         public FrmSubMain()
         {
@@ -22,6 +23,7 @@ namespace RemoteControl.SubController
             InitDashboard();
             InitContextMenu();
             InitGroups();
+            InitializeOnlineNotifyIcon();
             SubscribeRelayEvents();
             AutoConnect();
         }
@@ -33,6 +35,12 @@ namespace RemoteControl.SubController
             {
                 e.Cancel = true;
                 return;
+            }
+            if (onlineNotifyIcon != null)
+            {
+                onlineNotifyIcon.Visible = false;
+                onlineNotifyIcon.Dispose();
+                onlineNotifyIcon = null;
             }
             Relay.Stop();
         }
@@ -145,6 +153,7 @@ namespace RemoteControl.SubController
             {
                 UpsertDashboardClient(e.Client);
                 UpdateClientCount();
+                ShowClientOnlineNotification(e.Client);
             });
         }
 
@@ -162,7 +171,11 @@ namespace RemoteControl.SubController
             SafeInvoke(() =>
             {
                 foreach (var c in e.Removed) RemoveDashboardClient(c.SocketId);
-                foreach (var c in e.Added) UpsertDashboardClient(c);
+                foreach (var c in e.Added)
+                {
+                    UpsertDashboardClient(c);
+                    ShowClientOnlineNotification(c);
+                }
                 RefreshDashboard();
                 UpdateClientCount();
             });
@@ -190,6 +203,47 @@ namespace RemoteControl.SubController
                 this.BeginInvoke(action);
             else
                 action();
+        }
+
+        private void InitializeOnlineNotifyIcon()
+        {
+            if (onlineNotifyIcon != null)
+                return;
+
+            onlineNotifyIcon = new NotifyIcon();
+            onlineNotifyIcon.Icon = this.Icon == null ? SystemIcons.Information : this.Icon;
+            onlineNotifyIcon.Text = "副控管理端";
+            onlineNotifyIcon.Visible = true;
+        }
+
+        private void ShowClientOnlineNotification(SocketSession session)
+        {
+            if (session == null)
+                return;
+
+            try
+            {
+                InitializeOnlineNotifyIcon();
+                onlineNotifyIcon.ShowBalloonTip(
+                    3000,
+                    "主机上线",
+                    GetSessionLabel(session) + " 已上线",
+                    ToolTipIcon.Info);
+            }
+            catch
+            {
+            }
+        }
+
+        private string GetSessionLabel(SocketSession session)
+        {
+            if (session == null)
+                return "未知主机";
+            if (!string.IsNullOrEmpty(session.HostName))
+                return session.HostName;
+            if (!string.IsNullOrEmpty(session.GetExternalIP()))
+                return session.GetExternalIP();
+            return session.SocketId ?? "未知主机";
         }
     }
 }

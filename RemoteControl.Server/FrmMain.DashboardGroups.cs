@@ -10,7 +10,34 @@ namespace RemoteControl.Server
         private void SelectDashboardGroup(string groupName)
         {
             activeDashboardGroup = NormalizeDashboardGroupName(groupName);
+            if (!string.Equals(activeDashboardGroup, DefaultDashboardGroupName, StringComparison.OrdinalIgnoreCase))
+                dashboardKnownGroups.Add(activeDashboardGroup);
             ShowDashboardHome();
+        }
+
+        private void AddDashboardGroupFromPrompt()
+        {
+            FrmRename frm = new FrmRename("");
+            frm.Text = "添加分组";
+            if (frm.ShowDialog() != DialogResult.OK)
+                return;
+
+            AddDashboardGroup(frm.NewName, true);
+        }
+
+        private void AddDashboardGroup(string groupName, bool selectAfterCreate)
+        {
+            string normalized = NormalizeDashboardGroupName(groupName);
+            if (!string.Equals(normalized, DefaultDashboardGroupName, StringComparison.OrdinalIgnoreCase))
+            {
+                dashboardKnownGroups.Add(normalized);
+                EnsureDashboardGroupTab(normalized, CountDashboardGroupSessions(normalized));
+            }
+
+            if (selectAfterCreate)
+                SelectDashboardGroup(normalized);
+            else
+                UpdateDashboardCounters();
         }
 
         private void ShowPluginDashboardNotice()
@@ -53,9 +80,24 @@ namespace RemoteControl.Server
             if (string.Equals(normalized, DefaultDashboardGroupName, StringComparison.OrdinalIgnoreCase))
                 dashboardSessionGroups.Remove(session.SocketId);
             else
+            {
+                dashboardKnownGroups.Add(normalized);
                 dashboardSessionGroups[session.SocketId] = normalized;
+            }
 
             RefreshHostDashboard();
+        }
+
+        private int CountDashboardGroupSessions(string groupName)
+        {
+            int count = 0;
+            string normalized = NormalizeDashboardGroupName(groupName);
+            foreach (SocketSession session in onlineClientSessions)
+            {
+                if (string.Equals(GetDashboardGroupName(session), normalized, StringComparison.OrdinalIgnoreCase))
+                    count++;
+            }
+            return count;
         }
 
         private void RemoveDashboardGroup(SocketSession session)

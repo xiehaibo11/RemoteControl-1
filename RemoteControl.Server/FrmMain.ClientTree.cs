@@ -29,6 +29,7 @@ namespace RemoteControl.Server
             this.clientCount = this.onlineClientSessions.Count;
             refreshClientCountShow();
             doOutput(GetClientDisplayText(oClient) + " 上线了！");
+            ShowClientOnlineNotification(oClient);
         }
 
         private void UpdateClient(SocketSession client)

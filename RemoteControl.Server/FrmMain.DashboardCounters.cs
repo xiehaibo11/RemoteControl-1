@@ -21,6 +21,12 @@ namespace RemoteControl.Server
                 counts[groupName]++;
             }
 
+            foreach (string groupName in dashboardKnownGroups)
+            {
+                if (!counts.ContainsKey(groupName))
+                    counts[groupName] = 0;
+            }
+
             int defaultCount = counts.ContainsKey(DefaultDashboardGroupName) ? counts[DefaultDashboardGroupName] : 0;
             if (dashboardDefaultTab != null)
             {
@@ -41,7 +47,7 @@ namespace RemoteControl.Server
             List<string> staleGroups = new List<string>();
             foreach (string groupName in dashboardGroupTabs.Keys)
             {
-                if (!counts.ContainsKey(groupName))
+                if (!counts.ContainsKey(groupName) && !dashboardKnownGroups.Contains(groupName))
                     staleGroups.Add(groupName);
             }
             foreach (string groupName in staleGroups)

@@ -18,6 +18,8 @@ namespace RemoteControl.Server
             }
             if (e.Client != null) AddSessionNode(e.Client);
             UpdateStatus();
+            if (e.Client != null)
+                LogMessage("主机上线: " + GetSessionLabel(e.Client));
         }
 
         private void OnClientDisconnected(object sender, ClientConnectedEventArgs e)
@@ -44,7 +46,11 @@ namespace RemoteControl.Server
                 if (e.RemovedClients != null)
                     foreach (var c in e.RemovedClients) RemoveSessionNode(c);
                 if (e.AddedClients != null)
-                    foreach (var c in e.AddedClients) AddSessionNode(c);
+                    foreach (var c in e.AddedClients)
+                    {
+                        AddSessionNode(c);
+                        LogMessage("主机上线: " + GetSessionLabel(c));
+                    }
             }
             finally
             {
